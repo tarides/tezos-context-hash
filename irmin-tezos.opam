@@ -1,0 +1,32 @@
+opam-version: "2.0"
+synopsis: ""
+description: """
+
+"""
+maintainer: ["Clément Pascutto <clement@pascutto.fr>"]
+authors: ["Clément Pascutto <clement@pascutto.fr>"]
+homepage: "https://github.com/tarides/irmin-tezos"
+doc: "https://tarides.github.io/irmin-tezos/"
+bug-reports: "https://github.com/tarides/irmin-tezos/issues"
+depends: [
+  "dune" {>= "2.8"}
+  "alcotest"
+  "fmt"
+  "tezos-storage"
+  "odoc" {with-doc}
+]
+build: [
+  ["dune" "subst"] {dev}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+    "@runtest" {with-test}
+    "@doc" {with-doc}
+  ]
+]
+dev-repo: "git+https://github.com/tarides/irmin-tezos.git"

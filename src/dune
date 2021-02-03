@@ -1,0 +1,11 @@
+(library
+ (name irmin_tezos)
+ (public_name irmin-tezos)
+ (libraries
+  digestif.c
+  repr
+  irmin
+  irmin-pack
+  tezos-crypto
+  tezos-base
+  tezos-storage.encoding))

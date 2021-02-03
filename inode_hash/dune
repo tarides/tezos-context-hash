@@ -1,0 +1,3 @@
+(executable
+ (name inode_hash)
+ (libraries repr cmdliner irmin irmin-pack irmin-tezos))
