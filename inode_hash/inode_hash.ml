@@ -8,8 +8,8 @@ let contents x = `Contents (x, Metadata.default)
 let node x = `Node x
 
 module Gen = struct
-  let init = Random.init
-  let full_init = Random.full_init
+  (* let init = Random.init
+   * let full_init = Random.full_init *)
   let char () = char_of_int (Random.int 256)
   let fixed_string n () = String.init n (fun _ -> char ())
   let string () = fixed_string (Random.int (1 lsl 10)) ()
@@ -33,9 +33,8 @@ module Gen = struct
     fixed_inode len ()
 end
 
-let to_json (inode : Inter.Val.t list) : bytes =
-  ignore inode;
-  failwith "TODO"
+let to_json inodes : bytes =
+  Bytes.of_string (String.concat "\n" (List.map Inter.Val.Serde.from_t inodes))
 
 let run n short long path =
   if short && long then invalid_arg "short and long options are incompatible";
