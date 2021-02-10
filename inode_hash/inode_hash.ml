@@ -7,13 +7,18 @@ module H_contents = Irmin.Hash.Typed (Hash) (Contents)
 let contents x = `Contents (x, Metadata.default)
 let node x = `Node x
 
-let progress n =
-  let bar message =
-    Progress_unix.counter ~mode:`UTF8 ~total:(Int64.of_int n) ~message
-      ~pp:Progress.Units.bytes ()
-  in
-  Progress_unix.(with_reporters (bar "Generating     " / bar "Serialising    "))
-  @@ fun (g, s) b () -> match b with `Generating -> g | `Serialising -> s
+let progress verbose n =
+  if verbose then
+    let bar message =
+      Progress_unix.counter ~mode:`UTF8 ~total:(Int64.of_int n) ~message
+        ~pp:Progress.Units.bytes ()
+    in
+    Progress_unix.(
+      with_reporters (bar "Generating     " / bar "Serialising    "))
+    @@ fun (g, s) ->
+    let progress b () = match b with `Generating -> g | `Serialising -> s in
+    progress
+  else fun _ _ _ -> ()
 
 module Gen = struct
   (* let init = Random.init
@@ -59,7 +64,7 @@ let to_json verbose prog inodes : bytes =
 
 let run n inodes_type path verbose =
   let oc = open_out path in
-  let progress = progress n in
+  let progress = progress verbose n in
   Gen.fixed_list ~verbose
     ~prog:(progress `Generating)
     n
