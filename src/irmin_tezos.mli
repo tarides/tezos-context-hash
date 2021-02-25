@@ -30,7 +30,5 @@ module Store : sig
        and type hash = Hash.t
        and type Private.Sync.endpoint = unit
 
-  include Irmin.S with type repo := repo
-
   val reconstruct_index : ?output:string -> Irmin.config -> unit
 end
