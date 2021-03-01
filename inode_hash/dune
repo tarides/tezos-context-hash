@@ -1,4 +1,5 @@
 (executable
  (name Inode_hash)
  (public_name inode_hash)
- (libraries repr cmdliner irmin irmin-pack irmin-tezos progress progress.unix))
+ (libraries fmt repr cmdliner irmin irmin-pack irmin-tezos progress progress.unix)
+)

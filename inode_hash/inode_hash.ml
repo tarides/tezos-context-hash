@@ -41,7 +41,10 @@ module Gen = struct
   let content () = bytes ()
   let hash () = content () |> H_contents.hash
   let atom () = hash () |> if Random.bool () then contents else node
-  let fixed_inode n () = fixed_list n (pair string atom) () |> Inter.Val.v
+
+  let fixed_inode n () =
+    fixed_list n (pair string atom) () |> Inter.Val.v
+
   let inode () = list (pair string atom) () |> Inter.Val.v
 
   let long_inode () =
@@ -62,7 +65,7 @@ let to_json verbose prog inodes : bytes =
             Inter.Val.Serde.from_t t)
           inodes))
 
-let run n inodes_type path verbose =
+let run_dataset n inodes_type path verbose =
   let oc = open_out path in
   let progress = progress verbose n in
   Gen.fixed_list ~verbose
@@ -76,6 +79,46 @@ let run n inodes_type path verbose =
   |> to_json verbose (progress `Serialising)
   |> output_bytes oc;
   close_out oc
+
+let pre_hash_atom = Irmin.Type.(unstage (pre_hash (pair string Node.value_t)))
+
+let pre_hash_list_atoms =
+  Irmin.Type.(unstage (pre_hash (list (pair string Node.value_t))))
+
+let pre_hash ph v =
+  let b = Buffer.create 80 in
+  ph v (Buffer.add_string b);
+  Buffer.contents b
+
+let hash ph = H_contents.hash @@ Bytes.of_string ph
+
+let run_decomp _v =
+  let bc = Bytes.of_string "content" in
+  let bn = Bytes.of_string "node" in
+  let hc = H_contents.hash bc in
+  let hn = H_contents.hash bn in
+  let sc = "stepc" in
+  let sn = "stepn" in
+  let content1 = (sc, contents hc) in
+  let phc = pre_hash pre_hash_atom content1 in
+  let hc = hash phc in
+  Format.eprintf "%s@.%a@.@." phc Irmin.Type.(pp H_contents.t) hc;
+  let node1 = (sn, node hn) in
+  let phn = pre_hash pre_hash_atom node1 in
+  let hn = hash phn in
+  Format.eprintf "%s@.%a@.@." phn Irmin.Type.(pp H_contents.t) hn;
+  let la = [ (* node1 *)
+             (* ; content1 *) ] in
+  let phl = pre_hash pre_hash_list_atoms la in
+  let hl = hash phl in
+  Format.eprintf "%s@.%a@.@." phl Irmin.Type.(pp H_contents.t) hl;
+  let v = Inter.Val.v la in
+  Format.eprintf "%a@." (Irmin.Type.pp_json Inter.Val.t) v
+
+let run action n inodes_type path verbose =
+  match action with
+  | `Dataset -> run_dataset n inodes_type path verbose
+  | `DecompHash -> run_decomp verbose
 
 open Cmdliner
 
@@ -100,10 +143,17 @@ let verbose =
   let doc = "Be verbose." in
   Arg.(value & flag & info [ "v"; "verbose" ] ~doc)
 
+let action =
+  let doc = "Dataset." in
+  let dataset = (`Dataset, Arg.info [ "s"; "dataset" ] ~doc) in
+  let doc = "Dataset." in
+  let hash_decomp = (`DecompHash, Arg.info [ "h"; "decomphash" ] ~doc) in
+  Arg.(value & vflag `DecompHash [ dataset; hash_decomp ])
+
 let cmd =
   let doc = "Irmin inodes generation" in
   Term.
-    ( const run $ inodes_number $ inodes_type $ path $ verbose,
+    ( const run $ action $ inodes_number $ inodes_type $ path $ verbose,
       info "inodes-gen" ~doc )
 
 let () = Term.(exit @@ eval cmd)
