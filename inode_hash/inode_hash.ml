@@ -41,10 +41,7 @@ module Gen = struct
   let content () = bytes ()
   let hash () = content () |> H_contents.hash
   let atom () = hash () |> if Random.bool () then contents else node
-
-  let fixed_inode n () =
-    fixed_list n (pair string atom) () |> Inter.Val.v
-
+  let fixed_inode n () = fixed_list n (pair string atom) () |> Inter.Val.v
   let inode () = list (pair string atom) () |> Inter.Val.v
 
   let long_inode () =
@@ -57,13 +54,18 @@ module Gen = struct
 end
 
 let to_json verbose prog inodes : bytes =
-  Bytes.of_string
-    (String.concat "\n"
-       (List.map
-          (fun t ->
-            if verbose then (prog ()) 1L;
-            Inter.Val.Serde.from_t t)
-          inodes))
+  ignore verbose;
+  ignore prog;
+  ignore inodes;
+  failwith "TODO"
+
+(* Bytes.of_string
+ *   (String.concat "\n"
+ *      (List.map
+ *         (fun t ->
+ *           if verbose then (prog ()) 1L;
+ *           Inter.Val.Serde.from_t t)
+ *         inodes)) *)
 
 let run_dataset n inodes_type path verbose =
   let oc = open_out path in
