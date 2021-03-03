@@ -32,11 +32,15 @@ module Gen = struct
 end
 
 module Serde = struct
-  type binding = Node.step * Node.value [@@deriving irmin]
+  type binding = { name : Node.step; kind : char; hash : Node.hash }
+  [@@deriving irmin]
 
-  type v =
-    | Values of Node.hash * binding list
-    | Tree of Node.hash * v option list
+  let from_ibinding (s, b) =
+    match b with
+    | `Node h -> { name = s; kind = '\001'; hash = h }
+    | `Contents (h, _) -> { name = s; kind = '\000'; hash = h }
+
+  type v = Values of Node.hash * binding list | Tree of Node.hash * v list
 
   let v_t v_t : v Irmin.Type.t =
     let open Irmin.Type in
@@ -46,9 +50,7 @@ module Serde = struct
     |~ case1 "Values"
          (pair Node.hash_t (list binding_t))
          (fun (h, bl) -> Values (h, bl))
-    |~ case1 "Tree"
-         (pair Node.hash_t (list (option v_t)))
-         (fun (d, t) -> Tree (d, t))
+    |~ case1 "Tree" (pair Node.hash_t (list v_t)) (fun (d, t) -> Tree (d, t))
     |> sealv
 
   let v_t = Irmin.Type.mu @@ fun v -> v_t v
@@ -61,11 +63,11 @@ module Serde = struct
       | `Tree (hash, t) ->
           Tree
             ( hash,
-              List.map
+              List.filter_map
                 (function
                   | None -> None | Some sp -> Some (from_struct_pred sp))
                 t )
-      | `Values (hash, l) -> Values (hash, l)
+      | `Values (hash, l) -> Values (hash, List.map from_ibinding l)
     in
     from_struct_pred (Inter.Val.structured_pred it)
 
@@ -98,7 +100,11 @@ module Serde = struct
     let v = Some (from_it t) in
     let bt = Inter.Val.to_bin t in
     Irmin.Type.to_json_string s_t
-      { hash = Inter.Elt.hash bt; bindings = Inter.Val.list t; v }
+      {
+        hash = Inter.Elt.hash bt;
+        bindings = List.map from_ibinding (Inter.Val.list t);
+        v;
+      }
 
   (* let to_t s =
    *   match Irmin.Type.of_json_string s_t s with
