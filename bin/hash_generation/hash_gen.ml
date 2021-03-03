@@ -12,7 +12,7 @@ module Gen = struct
   let char () = char_of_int (33 + Random.int 94)
   let int () = Random.int ((1 lsl 30) - 1)
   let fixed_string n () = String.init n (fun _ -> char ())
-  let string () = fixed_string (Random.int (1 lsl 5)) ()
+  let string () = fixed_string (1 + Random.int (1 lsl 5)) ()
   let fixed_bytes n () = Bytes.init n (fun _ -> char ())
   let bytes () = fixed_bytes (Random.int (1 lsl 10)) ()
   let fixed_list n gen () = List.init n (fun _ -> gen ())
@@ -99,14 +99,6 @@ module Serde = struct
     let bt = Inter.Val.to_bin t in
     Irmin.Type.to_json_string s_t
       { hash = Inter.Elt.hash bt; bindings = Inter.Val.list t; v }
-
-  (* let to_t s =
-   *   match Irmin.Type.of_json_string s_t s with
-   *   | Ok { bindings; hash = h; _ } ->
-   *       let t = Inter.Val.v bindings in
-   *       if h = Inter.Val.hash t then t
-   *       else failwith "The serialized hash and the computed hash don't match"
-   *   | Error (`Msg e) -> failwith e *)
 end
 
 let generate_ocaml_hash_cases n dir seed =
@@ -126,16 +118,18 @@ let generate_ocaml_hash_cases n dir seed =
   |> Yojson.to_channel oc;
   close_out oc
 
-let to_json inodes : bytes =
-  Bytes.of_string
-    (String.concat "\n" (List.map (fun t -> Serde.from_t t) inodes))
+let to_json oc inodes =
+  let open Fmt in
+  kstr (output_string oc) "%a"
+    (list ~sep:nop (using Serde.from_t string))
+    inodes
 
 let generate_inode_cases msg gen n dir seed =
   let path = Fmt.kstr (Filename.concat dir) "inodes_%s.json" msg in
   Fmt.pr "Generating %s inode test cases in `%s'@." msg path;
   let oc = open_out path in
   Gen.init seed;
-  Gen.fixed_list n gen () |> to_json |> output_bytes oc;
+  Gen.fixed_list n gen () |> to_json oc;
   close_out oc
 
 let generate n dir seed =
