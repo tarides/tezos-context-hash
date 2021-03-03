@@ -2,4 +2,6 @@
  (name Inode_hash)
  (public_name inode_hash)
  (libraries fmt repr cmdliner irmin irmin-pack irmin-tezos progress progress.unix)
+ (preprocess
+  (pps ppx_irmin))
 )

@@ -53,19 +53,92 @@ module Gen = struct
     fixed_inode len ()
 end
 
-let to_json verbose prog inodes : bytes =
-  ignore verbose;
-  ignore prog;
-  ignore inodes;
-  failwith "TODO"
+module Serde = struct
+  type binding = Node.step * Node.value [@@deriving irmin]
 
-(* Bytes.of_string
- *   (String.concat "\n"
- *      (List.map
- *         (fun t ->
- *           if verbose then (prog ()) 1L;
- *           Inter.Val.Serde.from_t t)
- *         inodes)) *)
+  type v =
+    | Values of Node.hash * binding list
+    | Tree of Node.hash * v option list
+
+  let v_t v_t : v Irmin.Type.t =
+    let open Irmin.Type in
+    variant "tree" (fun values tree -> function
+      | Values (hash, bl) -> values (hash, bl)
+      | Tree (hash, iil) -> tree (hash, iil))
+    |~ case1 "Values"
+         (pair Node.hash_t (list binding_t))
+         (fun (h, bl) -> Values (h, bl))
+    |~ case1 "Tree"
+         (pair Node.hash_t (list (option v_t)))
+         (fun (d, t) -> Tree (d, t))
+    |> sealv
+
+  let v_t = Irmin.Type.mu @@ fun v -> v_t v
+
+  type s = { hash : Node.hash; bindings : binding list; v : v option }
+  [@@deriving irmin]
+
+  let from_it it =
+    let rec from_struct_pred = function
+      | `Tree (hash, t) ->
+          Tree
+            ( hash,
+              List.map
+                (function
+                  | None -> None | Some sp -> Some (from_struct_pred sp))
+                t )
+      | `Values (hash, l) -> Values (hash, l)
+    in
+    from_struct_pred (Inter.Val.structured_pred it)
+
+  (* Takes a Bin.t and convert it to a Serde.t
+   * As a remainder, a Bin.t has the following type
+   * type ptr = { index : int; hash : H.t }
+   * type tree = { depth : int; length : int; entries : ptr list }
+   * type v = Values of (step * value) list | Tree of tree
+   * and t (value) = { hash : hash Lazy.t; stable : bool; v : v }
+   * To
+   * type t = {
+   *   hash : H_contents.t;
+   *   bindings : (string * Inode.Val.value) list;
+   *   tree : serde_tree option;
+   * }
+   * Bindings can easily be obtained with list
+   * tree is of type
+   * type tree =
+   *   | Values of serde_binding list
+   *   | Tree of int * serde_inode option list
+   * and inode is of type
+   * serde_inode = { hash : H_contents.t; tree : serde_tree; depth : int }
+   * ptr is transformed in t for this serialisation so the type we need to
+   * serialise is
+   * type tree = { depth : int; length : int; entries : t option array }
+   * and v = Values of value StepMap.t | Tree of tree
+   * and t (value) = { hash : hash Lazy.t; stable : bool; v : v }
+   *)
+  let from_t (t : Inter.Val.t) =
+    let v = Some (from_it t) in
+    let bt = Inter.Val.to_bin t in
+    Irmin.Type.to_json_string s_t
+      { hash = Inter.Elt.hash bt; bindings = Inter.Val.list t; v }
+
+  let to_t s =
+    match Irmin.Type.of_json_string s_t s with
+    | Ok { bindings; hash = h; _ } ->
+        let t = Inter.Val.v bindings in
+        if h = Inter.Val.hash t then t
+        else failwith "The serialized hash and the computed hash don't match"
+    | Error (`Msg e) -> failwith e
+end
+
+let to_json verbose prog inodes : bytes =
+  Bytes.of_string
+    (String.concat "\n"
+       (List.map
+          (fun t ->
+            if verbose then (prog ()) 1L;
+            Serde.from_t t)
+          inodes))
 
 let run_dataset n inodes_type path verbose =
   let oc = open_out path in
