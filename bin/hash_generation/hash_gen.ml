@@ -12,7 +12,7 @@ module Gen = struct
   let char () = char_of_int (33 + Random.int 94)
   let int () = Random.int ((1 lsl 30) - 1)
   let fixed_string n () = String.init n (fun _ -> char ())
-  let string () = fixed_string (Random.int (1 lsl 5)) ()
+  let string () = fixed_string (1 + Random.int (1 lsl 5)) ()
   let fixed_bytes n () = Bytes.init n (fun _ -> char ())
   let bytes () = fixed_bytes (Random.int (1 lsl 10)) ()
   let fixed_list n gen () = List.init n (fun _ -> gen ())
@@ -71,31 +71,6 @@ module Serde = struct
     in
     from_struct_pred (Inter.Val.structured_pred it)
 
-  (* Takes a Bin.t and convert it to a Serde.t
-   * As a remainder, a Bin.t has the following type
-   * type ptr = { index : int; hash : H.t }
-   * type tree = { depth : int; length : int; entries : ptr list }
-   * type v = Values of (step * value) list | Tree of tree
-   * and t (value) = { hash : hash Lazy.t; stable : bool; v : v }
-   * To
-   * type t = {
-   *   hash : H_contents.t;
-   *   bindings : (string * Inode.Val.value) list;
-   *   tree : serde_tree option;
-   * }
-   * Bindings can easily be obtained with list
-   * tree is of type
-   * type tree =
-   *   | Values of serde_binding list
-   *   | Tree of int * serde_inode option list
-   * and inode is of type
-   * serde_inode = { hash : H_contents.t; tree : serde_tree; depth : int }
-   * ptr is transformed in t for this serialisation so the type we need to
-   * serialise is
-   * type tree = { depth : int; length : int; entries : t option array }
-   * and v = Values of value StepMap.t | Tree of tree
-   * and t (value) = { hash : hash Lazy.t; stable : bool; v : v }
-   *)
   let from_t (t : Inter.Val.t) =
     let v = Some (from_it t) in
     let bt = Inter.Val.to_bin t in
@@ -126,22 +101,24 @@ let generate_ocaml_hash_cases n dir seed =
            [
              ("s", `String s);
              ("seed", `Int seed);
-             ("custom_hash", `Int (Hashtbl.seeded_hash seed s));
+             ("ocaml_hash", `Int (Hashtbl.seeded_hash seed s));
            ])
   |> (fun l -> `List l)
   |> Yojson.to_channel oc;
   close_out oc
 
-let to_json inodes : bytes =
-  Bytes.of_string
-    (String.concat "\n" (List.map (fun t -> Serde.from_t t) inodes))
+let to_json oc inodes =
+  let open Fmt in
+  kstr (output_string oc) "%a"
+    (list ~sep:nop (using Serde.from_t string))
+    inodes
 
 let generate_inode_cases msg gen n dir seed =
   let path = Fmt.kstr (Filename.concat dir) "inodes_%s.json" msg in
   Fmt.pr "Generating %s inode test cases in `%s'@." msg path;
   let oc = open_out path in
   Gen.init seed;
-  Gen.fixed_list n gen () |> to_json |> output_bytes oc;
+  Gen.fixed_list n gen () |> to_json oc;
   close_out oc
 
 let generate n dir seed =
