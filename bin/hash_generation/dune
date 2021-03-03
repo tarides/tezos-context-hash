@@ -1,0 +1,14 @@
+(executable
+ (name hash_gen)
+ (public_name irmin-hash-gen)
+ (libraries
+  fmt
+  repr
+  cmdliner
+  irmin
+  irmin-pack
+  irmin-tezos
+  yojson)
+ (preprocess
+  (pps ppx_irmin))
+)
