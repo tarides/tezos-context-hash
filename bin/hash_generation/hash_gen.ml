@@ -112,7 +112,7 @@ let generate_ocaml_hash_cases n dir seed =
            [
              ("s", `String s);
              ("seed", `Int seed);
-             ("custom_hash", `Int (Hashtbl.seeded_hash seed s));
+             ("ocaml_hash", `Int (Hashtbl.seeded_hash seed s));
            ])
   |> (fun l -> `List l)
   |> Yojson.to_channel oc;
