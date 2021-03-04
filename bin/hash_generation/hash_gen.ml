@@ -69,7 +69,7 @@ module Serde = struct
                 t )
       | `Values (hash, l) -> Values (hash, List.map from_ibinding l)
     in
-    from_struct_pred (Inter.Val.structured_pred it)
+    from_struct_pred (Inter.Val.to_tree it)
 
   let from_t (t : Inter.Val.t) =
     let v = Some (from_it t) in
