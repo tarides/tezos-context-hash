@@ -1,3 +1,3 @@
 (lang dune 2.8.2)
-(name irmin-tezos)
+(name tezos-context-hash)
 (implicit_transitive_deps false)

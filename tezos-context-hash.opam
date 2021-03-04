@@ -14,21 +14,11 @@ depends: [
   "dune" {>= "2.8"}
   "alcotest"
   "fmt"
-  "tezos-storage"
-  "odoc" {with-doc}
+  "irmin-pack"
 ]
 build: [
   ["dune" "subst"] {dev}
-  [
-    "dune"
-    "build"
-    "-p"
-    name
-    "-j"
-    jobs
-    "@install"
-    "@runtest" {with-test}
-    "@doc" {with-doc}
-  ]
+  [ "dune" "build" "-p" name "-j"  jobs  "@install"]
+  [ "dune" "build" "-p" name "-j"  jobs  "@runtest" {with-test}]
 ]
 dev-repo: "git+https://github.com/tarides/tezos-context-hash.git"
