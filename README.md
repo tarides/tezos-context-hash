@@ -301,7 +301,7 @@ name `n`, its index at depth `d` is defined as:
 
 ```python
 index(d, n) =
-    abs (ocaml_hash(d, n)) mod 32
+    ocaml_hash(d, n) mod 32
 ```
 
 where `ocaml_hash` is a custom, non-crypto hash function defined by
