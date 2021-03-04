@@ -1,6 +1,8 @@
 (*****************************************************************************)
 (*                                                                           *)
 (* Open Source License                                                       *)
+(* Copyright (c) 2018 Dynamic Ledger Solutions, Inc. <contact@tezos.com>     *)
+(* Copyright (c) 2020 Metastate AG <hello@metastate.dev>                     *)
 (* Copyright (c) 2018-2021 Tarides <contact@tarides.com>                     *)
 (*                                                                           *)
 (* Permission is hereby granted, free of charge, to any person obtaining a   *)
@@ -23,19 +25,8 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Encoding
-module Conf : Irmin_pack.Config.S
+type t = Base58 of string
 
-module Store : sig
-  include
-    Irmin.S
-      with type key = Path.t
-       and type step = Path.step
-       and type metadata = Metadata.t
-       and type contents = Contents.t
-       and type branch = Branch.t
-       and type hash = Hash.t
-       and type Private.Sync.endpoint = unit
-
-  val reconstruct_index : ?output:string -> Irmin.config -> unit
-end
+val pp : t Fmt.t
+val encode : prefix:string -> string -> t
+val decode : prefix:string -> t -> string option
