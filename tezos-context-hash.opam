@@ -1,0 +1,34 @@
+opam-version: "2.0"
+synopsis: "Specification of the Tezos context hash"
+description: """
+This package contains the specification of the Tezos context hash
+as well as generators of datasets useful to verify that an implemenation
+comply with the specificiation.
+"""
+maintainer: ["Clément Pascutto <clement@pascutto.fr>"]
+authors: ["Clément Pascutto <clement@pascutto.fr>"]
+homepage: "https://github.com/tarides/tezos-context-hash"
+doc: "https://tarides.github.io/tezos-context-hash/"
+bug-reports: "https://github.com/tarides/tezos-context-hash/issues"
+depends: [
+  "dune" {>= "2.8"}
+  "alcotest"
+  "fmt"
+  "tezos-storage"
+  "odoc" {with-doc}
+]
+build: [
+  ["dune" "subst"] {dev}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+    "@runtest" {with-test}
+    "@doc" {with-doc}
+  ]
+]
+dev-repo: "git+https://github.com/tarides/tezos-context-hash.git"
