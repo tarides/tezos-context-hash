@@ -28,12 +28,13 @@ module Spec = struct
       if Inter.Val.length t <= Conf.stable_hash then None else Some (inode t)
     in
     let bt = Inter.Val.to_bin t in
-    Irmin.Type.to_json_string node_t
-      {
-        hash = Inter.Elt.hash bt;
-        bindings = List.map entry (Inter.Val.list t);
-        inode;
-      }
+    {
+      hash = Inter.Elt.hash bt;
+      bindings = List.map entry (Inter.Val.list t);
+      inode;
+    }
+
+  let pp = Irmin.Type.pp_json ~minify:false node_t
 end
 
 let contents x = `Contents (x, Metadata.default)
@@ -63,8 +64,20 @@ module Gen = struct
     fixed_inode len ()
 end
 
-let generate_ocaml_hash_cases n dir seed =
-  let path = Filename.concat dir "ocaml_hash.json" in
+let rec mkdir s =
+  try
+    (match Filename.dirname s with "." -> () | parent -> mkdir parent);
+    Unix.mkdir (Filename.basename s) 0o755
+  with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
+
+let generate_ocaml_hash_cases prefix n dir seed =
+  mkdir dir;
+  let file =
+    match prefix with
+    | None -> "ocaml_hash.json"
+    | Some p -> p ^ ".ocaml_hash.json"
+  in
+  let path = Filename.concat dir file in
   Fmt.pr "Generating ocaml_hash test cases in `%s'@." path;
   let oc = open_out path in
   Gen.init seed;
@@ -77,32 +90,37 @@ let generate_ocaml_hash_cases n dir seed =
              ("ocaml_hash", `Int (Hashtbl.seeded_hash seed s));
            ])
   |> (fun l -> `List l)
-  |> Yojson.to_channel oc;
+  |> Yojson.pretty_to_channel oc;
   close_out oc
 
-let to_json oc inodes =
-  let open Fmt in
-  kstr (output_string oc) "%a" (list ~sep:nop (using Spec.of_t string)) inodes
+let to_json ppf inodes =
+  List.iter
+    (fun t ->
+      let n = Spec.of_t t in
+      Spec.pp ppf n)
+    inodes
 
-let generate_inode_cases msg gen n dir seed =
-  let path = Fmt.kstr (Filename.concat dir) "inodes_%s.json" msg in
-  Fmt.pr "Generating %s inode test cases in `%s'@." msg path;
+let generate_inode_cases prefix msg gen n dir seed =
+  mkdir dir;
+  let file =
+    match prefix with None -> msg | Some p -> Fmt.strf "%s.%s" p msg
+  in
+  let path = Filename.concat dir (Fmt.strf "%s.json" file) in
+  Fmt.pr "Generating %s test cases in `%s'@." msg path;
   let oc = open_out path in
+  let ppf = Format.formatter_of_out_channel oc in
   Gen.init seed;
-  Gen.fixed_list n gen () |> to_json oc;
+  let l = Gen.fixed_list n gen () in
+  Fmt.pf ppf "%a\n%!" to_json l;
   close_out oc
 
-let generate n dir seed =
+let generate prefix n dir seed =
   Printexc.record_backtrace true;
-  generate_ocaml_hash_cases n dir seed;
-  generate_inode_cases "short" Gen.short_inode n dir seed;
-  generate_inode_cases "long" Gen.long_inode n dir seed
+  generate_ocaml_hash_cases prefix n dir seed;
+  generate_inode_cases prefix "nodes" Gen.short_inode n dir seed;
+  generate_inode_cases prefix "inodes" Gen.long_inode n dir seed
 
 open Cmdliner
-
-let rec mkdir s =
-  (match Filename.dirname s with "." -> () | parent -> mkdir parent);
-  Unix.mkdir (Filename.basename s) 0o755
 
 let directory =
   let parse s =
@@ -110,15 +128,17 @@ let directory =
     | true ->
         if Sys.is_directory s then `Ok s
         else `Error (Fmt.str "`%s' is not a directory" s)
-    | false ->
-        mkdir s;
-        `Ok s
+    | false -> `Ok s
   in
   (parse, Fmt.string)
 
 let seed =
   let doc = "Seed used to generate random data." in
   Arg.(value & opt int 0 & info [ "s"; "seed" ] ~doc)
+
+let prefix =
+  let doc = "Optional string to prefix to generated files ." in
+  Arg.(value & opt (some string) None & info [ "prefix" ] ~doc)
 
 let number =
   let doc = "Number of data points to generate for each test." in
@@ -129,7 +149,9 @@ let dir =
   Arg.(value & opt directory "data" & info [ "d"; "directory" ] ~doc)
 
 let cmd =
-  let doc = "Irmin hash test cases generation" in
-  Term.(const generate $ number $ dir $ seed, info "irmin-hash-gen" ~doc)
+  let doc = "Tezos context hash test cases generation" in
+  Term.
+    ( const generate $ prefix $ number $ dir $ seed,
+      info "tezos-context-hash-gen" ~doc )
 
 let () = Term.(exit @@ eval cmd)
