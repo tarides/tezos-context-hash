@@ -2,7 +2,11 @@
 
 Read the [Spec](https://hackmd.io/DnsQrkXCRLmHA3xzLiFgGw).
 
-Dataset contains:
-- [./data/nodes.json] to test nodes with at most 256 entries.
-- [./data/inodes.json] to test inodes with more than 256 entries.
-- [./data/ocaml_hash.json] to test the OCaml hash function.
+The dataset contains:
+- [nodes.json] to test nodes with at most 256 entries.
+- [inodes.json] to test inodes with more than 256 entries.
+- [ocaml_hash.json] to test the OCaml hash function.
+
+[nodes.json]: https://raw.githubusercontent.com/tarides/tezos-context-hash/main/data/nodes.json
+[inodes.json]: https://raw.githubusercontent.com/tarides/tezos-context-hash/main/data/inodes.json
+[ocaml_hash.json]: https://raw.githubusercontent.com/tarides/tezos-context-hash/main/data/ocaml_hash.json
