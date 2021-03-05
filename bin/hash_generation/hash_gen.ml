@@ -1,8 +1,40 @@
 open Irmin_tezos
+open Encoding
 module Node = Irmin.Private.Node.Make (Hash) (Path) (Metadata)
 module Inter = Irmin_pack.Private.Inode.Make_intermediate (Conf) (Hash) (Node)
 module Index = Irmin_pack.Index.Make (Hash)
 module H_contents = Irmin.Hash.Typed (Hash) (Contents)
+
+module Spec = struct
+  type kind = Tree | Contents [@@deriving irmin]
+
+  type entry = { name : Node.step; kind : kind; hash : Node.hash }
+  [@@deriving irmin]
+
+  type inode = Inter.Val.Concrete.t [@@deriving irmin]
+
+  type node = { hash : Node.hash; bindings : entry list; inode : inode option }
+  [@@deriving irmin]
+
+  let entry (s, b) =
+    match b with
+    | `Node h -> { name = s; kind = Tree; hash = h }
+    | `Contents (h, _) -> { name = s; kind = Contents; hash = h }
+
+  let inode = Inter.Val.to_concrete
+
+  let of_t (t : Inter.Val.t) =
+    let inode =
+      if Inter.Val.length t <= Conf.stable_hash then None else Some (inode t)
+    in
+    let bt = Inter.Val.to_bin t in
+    Irmin.Type.to_json_string node_t
+      {
+        hash = Inter.Elt.hash bt;
+        bindings = List.map entry (Inter.Val.list t);
+        inode;
+      }
+end
 
 let contents x = `Contents (x, Metadata.default)
 let node x = `Node x
@@ -31,65 +63,6 @@ module Gen = struct
     fixed_inode len ()
 end
 
-module Serde = struct
-  type binding = { name : Node.step; kind : char; hash : Node.hash }
-  [@@deriving irmin]
-
-  let from_ibinding (s, b) =
-    match b with
-    | `Node h -> { name = s; kind = '\001'; hash = h }
-    | `Contents (h, _) -> { name = s; kind = '\000'; hash = h }
-
-  type v = Values of Node.hash * binding list | Tree of Node.hash * v list
-
-  let v_t v_t : v Irmin.Type.t =
-    let open Irmin.Type in
-    variant "tree" (fun values tree -> function
-      | Values (hash, bl) -> values (hash, bl)
-      | Tree (hash, iil) -> tree (hash, iil))
-    |~ case1 "Values"
-         (pair Node.hash_t (list binding_t))
-         (fun (h, bl) -> Values (h, bl))
-    |~ case1 "Tree" (pair Node.hash_t (list v_t)) (fun (d, t) -> Tree (d, t))
-    |> sealv
-
-  let v_t = Irmin.Type.mu @@ fun v -> v_t v
-
-  type s = { hash : Node.hash; bindings : binding list; v : v option }
-  [@@deriving irmin]
-
-  let from_it it =
-    let rec from_struct_pred = function
-      | `Tree (hash, t) ->
-          Tree
-            ( hash,
-              List.filter_map
-                (function
-                  | None -> None | Some sp -> Some (from_struct_pred sp))
-                t )
-      | `Values (hash, l) -> Values (hash, List.map from_ibinding l)
-    in
-    from_struct_pred (Inter.Val.to_tree it)
-
-  let from_t (t : Inter.Val.t) =
-    let v = Some (from_it t) in
-    let bt = Inter.Val.to_bin t in
-    Irmin.Type.to_json_string s_t
-      {
-        hash = Inter.Elt.hash bt;
-        bindings = List.map from_ibinding (Inter.Val.list t);
-        v;
-      }
-
-  (* let to_t s =
-   *   match Irmin.Type.of_json_string s_t s with
-   *   | Ok { bindings; hash = h; _ } ->
-   *       let t = Inter.Val.v bindings in
-   *       if h = Inter.Val.hash t then t
-   *       else failwith "The serialized hash and the computed hash don't match"
-   *   | Error (`Msg e) -> failwith e *)
-end
-
 let generate_ocaml_hash_cases n dir seed =
   let path = Filename.concat dir "ocaml_hash.json" in
   Fmt.pr "Generating ocaml_hash test cases in `%s'@." path;
@@ -109,9 +82,7 @@ let generate_ocaml_hash_cases n dir seed =
 
 let to_json oc inodes =
   let open Fmt in
-  kstr (output_string oc) "%a"
-    (list ~sep:nop (using Serde.from_t string))
-    inodes
+  kstr (output_string oc) "%a" (list ~sep:nop (using Spec.of_t string)) inodes
 
 let generate_inode_cases msg gen n dir seed =
   let path = Fmt.kstr (Filename.concat dir) "inodes_%s.json" msg in

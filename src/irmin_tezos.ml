@@ -23,6 +23,7 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+module Encoding = Encoding
 open Encoding
 
 module Conf = struct

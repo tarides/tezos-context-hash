@@ -21,4 +21,7 @@ build: [
   [ "dune" "build" "-p" name "-j"  jobs  "@install"]
   [ "dune" "build" "-p" name "-j"  jobs  "@runtest" {with-test}]
 ]
+pin-depends: [
+  ["irmin-pack.dev" "git+https://github.com/mirage/irmin.git#06f1240d549a6e971b2445c56704ceb048f491b0"]
+]
 dev-repo: "git+https://github.com/tarides/tezos-context-hash.git"

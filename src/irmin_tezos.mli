@@ -23,8 +23,9 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Encoding
+module Encoding = Encoding
 module Conf : Irmin_pack.Config.S
+open Encoding
 
 module Store : sig
   include
