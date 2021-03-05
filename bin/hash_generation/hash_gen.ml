@@ -1,8 +1,41 @@
 open Irmin_tezos
+open Encoding
 module Node = Irmin.Private.Node.Make (Hash) (Path) (Metadata)
 module Inter = Irmin_pack.Private.Inode.Make_intermediate (Conf) (Hash) (Node)
 module Index = Irmin_pack.Index.Make (Hash)
 module H_contents = Irmin.Hash.Typed (Hash) (Contents)
+
+module Spec = struct
+  type kind = Tree | Contents [@@deriving irmin]
+
+  type entry = { name : Node.step; kind : kind; hash : Node.hash }
+  [@@deriving irmin]
+
+  type inode = Inter.Val.Concrete.t [@@deriving irmin]
+
+  type node = { hash : Node.hash; bindings : entry list; inode : inode option }
+  [@@deriving irmin]
+
+  let entry (s, b) =
+    match b with
+    | `Node h -> { name = s; kind = Tree; hash = h }
+    | `Contents (h, _) -> { name = s; kind = Contents; hash = h }
+
+  let inode = Inter.Val.to_concrete
+
+  let of_t (t : Inter.Val.t) =
+    let inode =
+      if Inter.Val.length t <= Conf.stable_hash then None else Some (inode t)
+    in
+    let bt = Inter.Val.to_bin t in
+    {
+      hash = Inter.Elt.hash bt;
+      bindings = List.map entry (Inter.Val.list t);
+      inode;
+    }
+
+  let pp = Irmin.Type.pp_json ~minify:false node_t
+end
 
 let contents x = `Contents (x, Metadata.default)
 let node x = `Node x
@@ -31,67 +64,20 @@ module Gen = struct
     fixed_inode len ()
 end
 
-module Serde = struct
-  type binding = { name : Node.step; kind : char; hash : Node.hash }
-  [@@deriving irmin]
+let rec mkdir s =
+  try
+    (match Filename.dirname s with "." -> () | parent -> mkdir parent);
+    Unix.mkdir (Filename.basename s) 0o755
+  with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
 
-  let from_ibinding (s, b) =
-    match b with
-    | `Node h -> { name = s; kind = '\001'; hash = h }
-    | `Contents (h, _) -> { name = s; kind = '\000'; hash = h }
-
-  type v = Values of Node.hash * binding list | Tree of Node.hash * v list
-
-  let v_t v_t : v Irmin.Type.t =
-    let open Irmin.Type in
-    variant "tree" (fun values tree -> function
-      | Values (hash, bl) -> values (hash, bl)
-      | Tree (hash, iil) -> tree (hash, iil))
-    |~ case1 "Values"
-         (pair Node.hash_t (list binding_t))
-         (fun (h, bl) -> Values (h, bl))
-    |~ case1 "Tree" (pair Node.hash_t (list v_t)) (fun (d, t) -> Tree (d, t))
-    |> sealv
-
-  let v_t = Irmin.Type.mu @@ fun v -> v_t v
-
-  type s = { hash : Node.hash; bindings : binding list; v : v option }
-  [@@deriving irmin]
-
-  let from_it it =
-    let rec from_struct_pred = function
-      | `Tree (hash, t) ->
-          Tree
-            ( hash,
-              List.filter_map
-                (function
-                  | None -> None | Some sp -> Some (from_struct_pred sp))
-                t )
-      | `Values (hash, l) -> Values (hash, List.map from_ibinding l)
-    in
-    from_struct_pred (Inter.Val.to_tree it)
-
-  let from_t (t : Inter.Val.t) =
-    let v = Some (from_it t) in
-    let bt = Inter.Val.to_bin t in
-    Irmin.Type.to_json_string s_t
-      {
-        hash = Inter.Elt.hash bt;
-        bindings = List.map from_ibinding (Inter.Val.list t);
-        v;
-      }
-
-  (* let to_t s =
-   *   match Irmin.Type.of_json_string s_t s with
-   *   | Ok { bindings; hash = h; _ } ->
-   *       let t = Inter.Val.v bindings in
-   *       if h = Inter.Val.hash t then t
-   *       else failwith "The serialized hash and the computed hash don't match"
-   *   | Error (`Msg e) -> failwith e *)
-end
-
-let generate_ocaml_hash_cases n dir seed =
-  let path = Filename.concat dir "ocaml_hash.json" in
+let generate_ocaml_hash_cases prefix n dir seed =
+  mkdir dir;
+  let file =
+    match prefix with
+    | None -> "ocaml_hash.json"
+    | Some p -> p ^ ".ocaml_hash.json"
+  in
+  let path = Filename.concat dir file in
   Fmt.pr "Generating ocaml_hash test cases in `%s'@." path;
   let oc = open_out path in
   Gen.init seed;
@@ -104,34 +90,37 @@ let generate_ocaml_hash_cases n dir seed =
              ("ocaml_hash", `Int (Hashtbl.seeded_hash seed s));
            ])
   |> (fun l -> `List l)
-  |> Yojson.to_channel oc;
+  |> Yojson.pretty_to_channel oc;
   close_out oc
 
-let to_json oc inodes =
-  let open Fmt in
-  kstr (output_string oc) "%a"
-    (list ~sep:nop (using Serde.from_t string))
+let to_json ppf inodes =
+  List.iter
+    (fun t ->
+      let n = Spec.of_t t in
+      Spec.pp ppf n)
     inodes
 
-let generate_inode_cases msg gen n dir seed =
-  let path = Fmt.kstr (Filename.concat dir) "inodes_%s.json" msg in
-  Fmt.pr "Generating %s inode test cases in `%s'@." msg path;
+let generate_inode_cases prefix msg gen n dir seed =
+  mkdir dir;
+  let file =
+    match prefix with None -> msg | Some p -> Fmt.strf "%s.%s" p msg
+  in
+  let path = Filename.concat dir (Fmt.strf "%s.json" file) in
+  Fmt.pr "Generating %s test cases in `%s'@." msg path;
   let oc = open_out path in
+  let ppf = Format.formatter_of_out_channel oc in
   Gen.init seed;
-  Gen.fixed_list n gen () |> to_json oc;
+  let l = Gen.fixed_list n gen () in
+  Fmt.pf ppf "%a\n%!" to_json l;
   close_out oc
 
-let generate n dir seed =
+let generate prefix n dir seed =
   Printexc.record_backtrace true;
-  generate_ocaml_hash_cases n dir seed;
-  generate_inode_cases "short" Gen.short_inode n dir seed;
-  generate_inode_cases "long" Gen.long_inode n dir seed
+  generate_ocaml_hash_cases prefix n dir seed;
+  generate_inode_cases prefix "nodes" Gen.short_inode n dir seed;
+  generate_inode_cases prefix "inodes" Gen.long_inode n dir seed
 
 open Cmdliner
-
-let rec mkdir s =
-  (match Filename.dirname s with "." -> () | parent -> mkdir parent);
-  Unix.mkdir (Filename.basename s) 0o755
 
 let directory =
   let parse s =
@@ -139,15 +128,17 @@ let directory =
     | true ->
         if Sys.is_directory s then `Ok s
         else `Error (Fmt.str "`%s' is not a directory" s)
-    | false ->
-        mkdir s;
-        `Ok s
+    | false -> `Ok s
   in
   (parse, Fmt.string)
 
 let seed =
   let doc = "Seed used to generate random data." in
   Arg.(value & opt int 0 & info [ "s"; "seed" ] ~doc)
+
+let prefix =
+  let doc = "Optional string to prefix to generated files ." in
+  Arg.(value & opt (some string) None & info [ "prefix" ] ~doc)
 
 let number =
   let doc = "Number of data points to generate for each test." in
@@ -158,7 +149,9 @@ let dir =
   Arg.(value & opt directory "data" & info [ "d"; "directory" ] ~doc)
 
 let cmd =
-  let doc = "Irmin hash test cases generation" in
-  Term.(const generate $ number $ dir $ seed, info "irmin-hash-gen" ~doc)
+  let doc = "Tezos context hash test cases generation" in
+  Term.
+    ( const generate $ prefix $ number $ dir $ seed,
+      info "tezos-context-hash-gen" ~doc )
 
 let () = Term.(exit @@ eval cmd)
