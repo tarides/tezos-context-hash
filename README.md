@@ -1,8 +1,7 @@
 # Irmin-tezos.
 
-Read the [Spec](https://hackmd.io/DnsQrkXCRLmHA3xzLiFgGw).
+Read the [Spec](https://hackmd.io/@samoht/tezos-context-hash).
 
-The dataset contains:
 - [nodes.json] to test nodes with at most 256 entries.
 - [inodes.json] to test inodes with more than 256 entries.
 - [ocaml_hash.json] to test the OCaml hash function.
