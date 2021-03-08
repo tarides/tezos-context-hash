@@ -1,7 +1,7 @@
 (rule
  (targets gen.ocaml_hash.json gen.nodes.json gen.inodes.json)
  (action
-  (run %{bin:tezos-context-hash-gen} --prefix gen --dir .)))
+  (run %{bin:tezos-context-hash} gen --prefix gen --dir .)))
 
 (rule
  (alias runtest)
@@ -23,3 +23,10 @@
  (deps (:file inodes.json))
  (action
   (diff %{file} gen.%{file})))
+
+(rule
+ (alias runtest)
+ (package tezos-context-hash)
+ (deps ocaml_hash.json nodes.json inodes.json)
+ (action
+  (run %{bin:tezos-context-hash} check --dir .)))
