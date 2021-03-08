@@ -1,26 +1,30 @@
 (rule
  (targets gen.ocaml_hash.json gen.nodes.json gen.inodes.json)
+ (package tezos-context-hash)
  (action
-  (run %{bin:tezos-context-hash} gen --prefix gen --dir .)))
+  (run tezos-context-hash gen --prefix gen --dir .)))
 
 (rule
  (alias runtest)
  (package tezos-context-hash)
- (deps (:file ocaml_hash.json))
- (action
-  (diff %{file} gen.%{file})))
-
-(rule
- (alias runtest)
- (package tezos-context-hash)
- (deps (:file nodes.json))
+ (deps
+  (:file ocaml_hash.json))
  (action
   (diff %{file} gen.%{file})))
 
 (rule
  (alias runtest)
  (package tezos-context-hash)
- (deps (:file inodes.json))
+ (deps
+  (:file nodes.json))
+ (action
+  (diff %{file} gen.%{file})))
+
+(rule
+ (alias runtest)
+ (package tezos-context-hash)
+ (deps
+  (:file inodes.json))
  (action
   (diff %{file} gen.%{file})))
 
@@ -29,4 +33,4 @@
  (package tezos-context-hash)
  (deps ocaml_hash.json nodes.json inodes.json)
  (action
-  (run %{bin:tezos-context-hash} check --dir .)))
+  (run tezos-context-hash check --dir .)))
