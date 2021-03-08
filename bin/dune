@@ -1,6 +1,7 @@
 (executable
  (name main)
  (public_name tezos-context-hash)
- (libraries fmt repr cmdliner irmin irmin-pack irmin_tezos yojson)
+ (package tezos-context-hash)
+ (libraries fmt cmdliner irmin irmin-pack irmin_tezos yojson)
  (preprocess
   (pps ppx_irmin)))

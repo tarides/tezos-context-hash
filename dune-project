@@ -1,3 +1,2 @@
-(lang dune 2.8.2)
+(lang dune 2.0)
 (name tezos-context-hash)
-(implicit_transitive_deps false)
