@@ -74,7 +74,11 @@ module Gen = struct
   let pair gen1 gen2 () = (gen1 (), gen2 ())
   let content () = bytes ()
   let hash () = content () |> H_contents.hash
-  let atom () = hash () |> if Random.bool () then contents else node
+
+  let atom () =
+    let b = Random.bool () in
+    hash () |> if b then contents else node
+
   let fixed_inode n () = fixed_list n (pair string atom) () |> Inter.Val.v
 
   let long_inode () =
