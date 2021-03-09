@@ -1,9 +1,6 @@
 open Irmin_tezos
 open Encoding
-module Node = Irmin.Private.Node.Make (Hash) (Path) (Metadata)
 module Inter = Irmin_pack.Private.Inode.Make_intermediate (Conf) (Hash) (Node)
-module Index = Irmin_pack.Index.Make (Hash)
-module H_contents = Irmin.Hash.Typed (Hash) (Contents)
 
 module Spec = struct
   type kind = Tree | Contents [@@deriving irmin]
@@ -73,8 +70,12 @@ module Gen = struct
   let fixed_list n gen () = List.init n (fun _ -> gen ())
   let pair gen1 gen2 () = (gen1 (), gen2 ())
   let content () = bytes ()
-  let hash () = content () |> H_contents.hash
-  let atom () = hash () |> if Random.bool () then contents else node
+  let hash () = content () |> Store.Contents.hash
+
+  let atom () =
+    let b = Random.bool () in
+    hash () |> if b then contents else node
+
   let fixed_inode n () = fixed_list n (pair string atom) () |> Inter.Val.v
 
   let long_inode () =
@@ -176,7 +177,7 @@ module Nodes = struct
     generate_file config Gen.long_inode Inodes
 
   let check_file dir f =
-    let path = file dir None Inodes in
+    let path = file dir None f in
     let msg =
       match f with Nodes -> "nodes" | Inodes -> "inodes" | _ -> assert false
     in
