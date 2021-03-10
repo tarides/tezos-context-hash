@@ -1,12 +1,10 @@
 # Tezos context hashes
 
-:::danger
-***Status**: Stable*
-
-***Version**: 2021-03-08*
-
-***Contact**: thomas@tarides.com*
-:::
+| **Status** | Stable     |
+|--|--|
+| **Version** | 2021-03-08   |
+| **Permalink**  | https://hackmd.io/@samoht/tezos-context-hash |
+|**Contact** | https://github.com/tarides/tezos-context-hash/issues |
 
 This document provides a specification for computing the encoding of each kind of objects present in the Tezos context. Tezos then applies 32-bytes [BLAKE2B-256](https://www.blake2.net/) to compute context hashes from these encodings. Moreover, hashes are displayed using a [base 58](https://en.bitcoinwiki.org/wiki/Base58) representation and are prefixed by `Co` and suffixed by a 4-byte checksum. For instance, `CoVGWKM7Ufu6dk74CEQz3MgffhUPFyeaMCD6eS3Q8o7mDis8n1Vi` is a valid context hash for Tezos.
 
@@ -159,7 +157,7 @@ As already described above, **a tree entry is a triplet: *name $\times$ kind $\t
 
 |  8   |     $n_1$      | ... |     $n_n$      |
 |:----:|:--------------:|:---:|:--------------:|
-| `\n` | `prehash(e_1)` | ... | `prehash(e_n)` |
+| `\n` | `encoding(e_1)` | ... | `encoding(e_n)` |
 
 where *$n_i$ = len(prehash($e_i$))* and *name($e_1$) $\lt$ ... $\lt$ name($e_n$)*. Hence all names must be different.
 
