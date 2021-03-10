@@ -159,7 +159,7 @@ As already described above, **a tree entry is a triplet: *name $\times$ kind $\t
 |:----:|:--------------:|:---:|:--------------:|
 | `\n` | `encoding(e_1)` | ... | `encoding(e_n)` |
 
-where *$n_i$ = len(prehash($e_i$))* and *name($e_1$) $\lt$ ... $\lt$ name($e_n$)*. Hence all names must be different.
+where *$n_i$ = len(encoding($e_i$))* and *name($e_1$) $\lt$ ... $\lt$ name($e_n$)*. Hence all names must be different.
 
 
 ### Inodes
@@ -192,9 +192,9 @@ where *kind* is `\000` for nodes, and `\001` for contents.
 
 |   1    |  1   |     $n_1$      | ... |     $n_k$      |
 |:------:|:----:|:--------------:|:---:|:--------------:|
-| `\000` | `\n` | `prehash(e_1)` | ... | `prehash(e_k)` |
+| `\000` | `\n` | `encoding(e_1)` | ... | `encoding(e_k)` |
 
-where *$n_i$ = len(prehash($e_i$))* and *name($e_1$) $\le$ ... $\le$ name($e_n$)*. Hence all names must be different.
+where *$n_i$ = len(encoding($e_i$))* and *name($e_1$) $\le$ ... $\le$ name($e_n$)*. Hence all names must be different.
 
 #### Inode trees
 
@@ -214,7 +214,7 @@ An inode tree with `k` pointers $p_1$, $p_2$, ... $p_k$ is encoded as follow:
 |:------:|:----------:|:---------------:|:----:|:-----:|:---:|:-----:|
 | `\001` |  `depth`   | `len(children)` | `\k` | $s_1$ | ... | $s_k$ |
 
-where *$s_i$ = prehash($p_i$)*.
+where *$s_i$ = encoding($p_i$)*.
 
 :::warning
 **Example: encoding an inode tree of depth `0`, length `50000` and a list of pointers encoded by $s_1$, ... $s_{32}$.**
