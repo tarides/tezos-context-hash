@@ -23,13 +23,10 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+module Conf = Conf
 module Encoding = Encoding
+module Partition = Partition
 open Encoding
-
-module Conf = struct
-  let entries = 32
-  let stable_hash = 256
-end
 
 module Store =
   Irmin_pack.Make_ext
