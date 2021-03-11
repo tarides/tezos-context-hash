@@ -27,15 +27,9 @@ module Spec = struct
   let inode = Inter.Val.to_concrete
 
   let of_t (t : Inter.Val.t) =
-    let inode =
-      if Inter.Val.length t <= Conf.stable_hash then None else Some (inode t)
-    in
-    let bt = Inter.Val.to_bin t in
-    {
-      hash = Inter.Elt.hash bt;
-      bindings = List.map entry (Inter.Val.list t);
-      inode;
-    }
+    let inode = if Inter.Val.stable t then None else Some (inode t) in
+    let hash = Inter.Val.hash t in
+    { hash; bindings = List.map entry (Inter.Val.list t); inode }
 
   let pp_entry = Irmin.Type.pp_json entry_t
   let pps = Irmin.Type.pp_json ~minify:false (Irmin.Type.list node_t)
