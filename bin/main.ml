@@ -27,8 +27,6 @@ module Spec = struct
 
   let inode = Inter.Val.to_concrete
 
-  module I = Irmin.Hash.Typed (Store.Hash) (Inter.Val)
-
   let of_t (t : Inter.Val.t) =
     let inode = if Inter.Val.stable t then None else Some (inode t) in
     let hash = Inter.Val.hash t in
@@ -37,7 +35,7 @@ module Spec = struct
   let pp_entry = Irmin.Type.pp_json entry_t
   let pps = Irmin.Type.pp_json ~minify:false (Irmin.Type.list node_t)
 
-  module N = Irmin.Hash.Typed (Store.Hash) (Inter.Val)
+  module N = Irmin.Hash.Typed (Store.Hash) (Store.Private.Node.Val)
 
   let hash_node = N.hash
   let pp_hash = Irmin.Type.pp Store.Hash.t
@@ -200,7 +198,7 @@ module Nodes = struct
                  { Spec.name; kind; hash })
         in
         let vs = List.map Spec.value bindings in
-        let n = Inter.Val.v vs in
+        let n = Store.Private.Node.Val.v vs in
         let h = Spec.hash_node n in
         let msg = Fmt.strf "%a\n" Fmt.Dump.(list Spec.pp_entry) bindings in
         check_hash msg hash h)
