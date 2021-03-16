@@ -1,5 +1,6 @@
 open Irmin_tezos
 open Encoding
+open Partition
 module Inter = Irmin_pack.Private.Inode.Make_intermediate (Conf) (Hash) (Node)
 
 module Spec = struct
@@ -222,6 +223,80 @@ let check dir =
   OCaml_hashes.check dir;
   Nodes.check dir
 
+let check_int msg expected got =
+  if expected <> got then (
+    Fmt.epr "%s: expected %d, got %d\n%!" msg expected got;
+    failwith __LOC__)
+
+let check_string msg expected got =
+  if expected <> got then (
+    Fmt.epr "%s: expected %s, got %s\n%!" msg expected got;
+    failwith __LOC__)
+
+let check_kind msg expected got =
+  if
+    match (expected, got) with
+    | Inter.Val.Concrete.Node, `Node -> true
+    | (Contents | Contents_x _), `Contents -> true
+    | _ -> false
+  then (
+    let exp =
+      match expected with Inter.Val.Concrete.Node -> "Node" | _ -> "Contents"
+    in
+    let got = match got with `Node -> "Node" | _ -> "Contents" in
+
+    Fmt.epr "%s: expected %s, got %s\n%!" msg exp got;
+    failwith __LOC__)
+
+let rec check_struct i p =
+  match (i, p) with
+  | Inter.Val.Concrete.Tree t1, Partition.Tree t2 ->
+      check_int "Tree length" t1.length t2.length;
+      check_int "Tree depth" t1.depth t2.depth;
+      List.iter2
+        (fun Inter.Val.Concrete.{ index; pointer; tree } (ep, evs) ->
+          check_int "Pointer index" index ep.pointer.index;
+          check_hash "Pointer hash" pointer ep.pointer.hash;
+          check_struct tree evs.vs)
+        t1.pointers t2.pointers
+  | Inter.Val.Concrete.Value l1, Values l2 ->
+      List.iter2
+        (fun Inter.Val.Concrete.{ name; kind; hash } ee ->
+          check_string "Entry name" name ee.entry.name;
+          check_kind "Entry kind" kind ee.entry.kind;
+          check_hash "Entry hash" hash ee.entry.hash)
+        l1 l2
+  | _ -> assert false
+
+let partition _dir =
+  let le =
+    List.init 512 (fun i ->
+        {
+          name = Format.sprintf "%d" i;
+          kind = (if i mod 2 = 0 then `Contents else `Node);
+          hash = Gen.hash ();
+        })
+  in
+  let lb =
+    List.map
+      (fun { name; kind; hash } ->
+        ( name,
+          match kind with
+          | `Contents -> `Contents (hash, ())
+          | `Node -> `Node hash ))
+      le
+  in
+  let inode = Inter.Val.v lb in
+  let rep = Inter.Val.to_concrete inode in
+  let part = Partition.partition le in
+  check_struct rep part.vs;
+  Format.eprintf "Hash inode: %a@."
+    Irmin.Type.(pp Inter.Val.hash_t)
+    (Inter.Val.hash inode);
+  Format.eprintf "Hash parti: %a@."
+    Irmin.Type.(pp Inter.Val.hash_t)
+    (Store.Contents.hash (Bytes.of_string part.vsencoding))
+
 open Cmdliner
 
 let directory =
@@ -262,4 +337,8 @@ let check =
   let doc = "Tezos context hash test cases checks" in
   Term.(const check $ dir, info "check" ~doc)
 
-let () = Term.(exit @@ eval_choice gen [ gen; check ])
+let partition =
+  let doc = "Irmin inode algorithm creation" in
+  Term.(const partition $ dir, info "partition" ~doc)
+
+let () = Term.(exit @@ eval_choice gen [ gen; check; partition ])

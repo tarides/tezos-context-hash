@@ -1,7 +1,7 @@
 open Encoding
 module H_contents = Irmin.Hash.Typed (Hash) (Contents)
 
-type entry = { name : string; kind : char; hash : Hash.t }
+type entry = { name : string; kind : [ `Node | `Contents ]; hash : Hash.t }
 type enc_entry = { eencoding : string; entry : entry }
 type pointer = { index : int; hash : Hash.t }
 type enc_pointer = { pencoding : string; pointer : pointer }
@@ -9,7 +9,11 @@ type enc_pointer = { pencoding : string; pointer : pointer }
 type vs =
   | Empty
   | Values of enc_entry list
-  | Tree of int * int * (enc_pointer * enc_vs) list
+  | Tree of {
+      depth : int;
+      length : int;
+      pointers : (enc_pointer * enc_vs) list;
+    }
 
 and enc_vs = { vsencoding : string; vs : vs }
 
@@ -21,10 +25,13 @@ let pre_hash t v =
 
 let compute_hash s = H_contents.hash (Bytes.of_string s)
 let pp_hash fmt h = Irmin.Type.(pp Encoding.Hash.t) fmt h
+let char_of_kind = function `Contents -> '\000' | `Node -> '\001'
 
 let to_enc_entry ({ name; kind; hash } as entry) =
   let len = pre_hash Irmin.Type.int (String.length name) in
-  let eencoding = Format.asprintf "%s%s%c%a" len name kind pp_hash hash in
+  let eencoding =
+    Format.asprintf "%s%s%c%a" len name (char_of_kind kind) pp_hash hash
+  in
   { eencoding; entry }
 
 let to_enc_pointer ({ index; hash } as pointer) =
@@ -42,12 +49,12 @@ let to_enc_vs vs =
           (Format.pp_print_list ~pp_sep (fun fmt e ->
                Format.fprintf fmt "%s" e.eencoding))
           l
-    | Tree (depth, len, l) ->
+    | Tree { depth; length; pointers } ->
         Format.asprintf "\001%a%a\032%a" pp_int_to_leb128 depth pp_int_to_leb128
-          len
+          length
           (Format.pp_print_list ~pp_sep (fun fmt (p, _) ->
                Format.fprintf fmt "%s" p.pencoding))
-          l
+          pointers
     | Empty -> Format.asprintf "\000\n"
   in
   { vsencoding; vs }
@@ -72,7 +79,7 @@ let partition l =
              (fun e1 e2 -> Stdlib.compare e1.entry.name e2.entry.name)
              l)
     | _ ->
-        let children =
+        let pointers =
           List.init Conf.entries (fun i ->
               (i, aux (depth + 1) (subset ~depth i l)))
           |> List.filter (fun (_, { vs; _ }) ->
@@ -82,6 +89,6 @@ let partition l =
                  let hp = to_enc_pointer { index = i; hash } in
                  (hp, vs))
         in
-        Tree (depth, List.length l, children)
+        Tree { depth; length = List.length l; pointers }
   in
   aux 0 l
