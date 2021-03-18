@@ -1,3 +1,5 @@
 (library
  (name irmin_tezos)
- (libraries fmt zarith irmin irmin-pack))
+ (libraries fmt zarith irmin irmin-pack)
+ (preprocess
+  (pps ppx_irmin)))

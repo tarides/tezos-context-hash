@@ -1,19 +1,16 @@
 open Encoding
 
 type entry = { name : string; kind : [ `Node | `Contents ]; hash : Hash.t }
-type enc_entry = { eencoding : string; entry : entry }
 type pointer = { index : int; hash : Hash.t }
-type enc_pointer = { pencoding : string; pointer : pointer }
+type 'a encoding = { encoding : string; v : 'a }
 
-type vs =
-  | Empty
-  | Values of enc_entry list
-  | Tree of {
-      depth : int;
-      length : int;
-      pointers : (enc_pointer * enc_vs) list;
-    }
+type tree = {
+  depth : int;
+  length : int;
+  pointers : (pointer encoding * vs encoding) list;
+}
 
-and enc_vs = { vsencoding : string; vs : vs }
+and vs = Empty | Values of entry encoding list | Tree of tree
 
-val partition : entry list -> enc_vs
+val partition : entry list -> vs encoding
+val enc_vs_t : vs encoding Irmin.Type.t

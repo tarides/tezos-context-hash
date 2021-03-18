@@ -234,9 +234,9 @@ let check_string msg expected got =
 let check_kind msg expected got =
   if
     match (expected, got) with
-    | Inter.Val.Concrete.Node, `Node -> true
-    | (Contents | Contents_x _), `Contents -> true
-    | _ -> false
+    | Inter.Val.Concrete.Node, `Node -> false
+    | (Contents | Contents_x _), `Contents -> false
+    | _ -> true
   then (
     let exp =
       match expected with Inter.Val.Concrete.Node -> "Node" | _ -> "Contents"
@@ -253,16 +253,16 @@ let rec check_struct i p =
       check_int "Tree depth" t1.depth t2.depth;
       List.iter2
         (fun Inter.Val.Concrete.{ index; pointer; tree } (ep, evs) ->
-          check_int "Pointer index" index ep.pointer.index;
-          check_hash "Pointer hash" pointer ep.pointer.hash;
-          check_struct tree evs.vs)
+          check_int "Pointer index" index ep.v.index;
+          check_hash "Pointer hash" pointer ep.v.hash;
+          check_struct tree evs.v)
         t1.pointers t2.pointers
   | Inter.Val.Concrete.Value l1, Values l2 ->
       List.iter2
         (fun Inter.Val.Concrete.{ name; kind; hash } ee ->
-          check_string "Entry name" name ee.entry.name;
-          check_kind "Entry kind" kind ee.entry.kind;
-          check_hash "Entry hash" hash ee.entry.hash)
+          check_string "Entry name" name ee.v.name;
+          check_kind "Entry kind" kind ee.v.kind;
+          check_hash "Entry hash" hash ee.v.hash)
         l1 l2
   | _ -> assert false
 
@@ -287,13 +287,17 @@ let partition _dir =
   let inode = Inter.Val.v lb in
   let rep = Inter.Val.to_concrete inode in
   let part = Partition.partition le in
-  check_struct rep part.vs;
-  Format.eprintf "Hash inode: %a@."
-    Irmin.Type.(pp Inter.Val.hash_t)
-    (Inter.Val.hash inode);
-  Format.eprintf "Hash parti: %a@."
-    Irmin.Type.(pp Inter.Val.hash_t)
-    (Store.Contents.hash (Bytes.of_string part.vsencoding))
+  (* Format.eprintf "Inode:@.%a@." Nodes.to_json [ inode ]; *)
+  Format.eprintf "Partition:@.%a@."
+    Irmin.Type.(pp_json ~minify:false Partition.enc_vs_t)
+    part;
+  (* Format.eprintf "Hash inode: %a@."
+   *   Irmin.Type.(pp Inter.Val.hash_t)
+   *   (Inter.Val.hash inode);
+   * Format.eprintf "Hash parti: %a@."
+   *   Irmin.Type.(pp Inter.Val.hash_t)
+   *   (Store.Contents.hash (Bytes.of_string part.vsencoding)); *)
+  check_struct rep part.v
 
 open Cmdliner
 
