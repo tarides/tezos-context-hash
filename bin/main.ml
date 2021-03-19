@@ -234,14 +234,14 @@ let check_string msg expected got =
 let check_kind msg expected got =
   if
     match (expected, got) with
-    | Inter.Val.Concrete.Node, `Node -> false
-    | (Contents | Contents_x _), `Contents -> false
+    | Inter.Val.Concrete.Node, Node -> false
+    | (Contents | Contents_x _), Content -> false
     | _ -> true
   then (
     let exp =
       match expected with Inter.Val.Concrete.Node -> "Node" | _ -> "Contents"
     in
-    let got = match got with `Node -> "Node" | _ -> "Contents" in
+    let got = match got with Node -> "Node" | _ -> "Contents" in
 
     Fmt.epr "%s: expected %s, got %s\n%!" msg exp got;
     failwith __LOC__)
@@ -249,10 +249,10 @@ let check_kind msg expected got =
 let rec check_struct i p =
   match (i, p) with
   | Inter.Val.Concrete.Tree t1, Partition.Tree t2 ->
-      check_int "Tree length" t1.length t2.length;
+      check_int "Tree length" t1.length t2.entries_length;
       check_int "Tree depth" t1.depth t2.depth;
       List.iter2
-        (fun Inter.Val.Concrete.{ index; pointer; tree } (ep, evs) ->
+        (fun Inter.Val.Concrete.{ index; tree; pointer } (ep, evs) ->
           check_int "Pointer index" index ep.v.index;
           check_hash "Pointer hash" pointer ep.v.hash;
           check_struct tree evs.v)
@@ -266,12 +266,12 @@ let rec check_struct i p =
         l1 l2
   | _ -> assert false
 
-let partition _dir =
+let partition n =
   let le =
-    List.init 512 (fun i ->
+    List.init n (fun i ->
         {
           name = Format.sprintf "%d" i;
-          kind = (if i mod 2 = 0 then `Contents else `Node);
+          kind = (if i mod 2 = 0 then Content else Node);
           hash = Gen.hash ();
         })
   in
@@ -279,15 +279,14 @@ let partition _dir =
     List.map
       (fun { name; kind; hash } ->
         ( name,
-          match kind with
-          | `Contents -> `Contents (hash, ())
-          | `Node -> `Node hash ))
+          match kind with Content -> `Contents (hash, ()) | Node -> `Node hash
+        ))
       le
   in
   let inode = Inter.Val.v lb in
   let rep = Inter.Val.to_concrete inode in
   let part = Partition.partition le in
-  (* Format.eprintf "Inode:@.%a@." Nodes.to_json [ inode ]; *)
+  Format.eprintf "Inode:@.%a@." Nodes.to_json [ inode ];
   Format.eprintf "Partition:@.%a@."
     Irmin.Type.(pp_json ~minify:false Partition.enc_vs_t)
     part;
@@ -341,6 +340,6 @@ let check =
 
 let partition =
   let doc = "Irmin inode algorithm creation" in
-  Term.(const partition $ dir, info "partition" ~doc)
+  Term.(const partition $ number, info "partition" ~doc)
 
 let () = Term.(exit @@ eval_choice gen [ gen; check; partition ])

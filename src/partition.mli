@@ -1,13 +1,14 @@
 open Encoding
 
-type entry = { name : string; kind : [ `Node | `Contents ]; hash : Hash.t }
-type pointer = { index : int; hash : Hash.t }
+type entry_kind = Node | Content
+type entry = { name : string; kind : entry_kind; hash : Hash.t }
+type inode_pointer = { index : int; hash : Hash.t }
 type 'a encoding = { encoding : string; v : 'a }
 
 type tree = {
   depth : int;
-  length : int;
-  pointers : (pointer encoding * vs encoding) list;
+  entries_length : int;
+  pointers : (inode_pointer encoding * vs encoding) list;
 }
 
 and vs = Empty | Values of entry encoding list | Tree of tree
