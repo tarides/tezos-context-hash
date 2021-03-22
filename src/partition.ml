@@ -1,11 +1,8 @@
-type hash = string [@@deriving irmin]
-type entry_kind = Node | Content [@@deriving irmin]
-
+type hash = string
+type entry_kind = Node | Content
 type entry = { name : string; kind : entry_kind; hash : hash }
-[@@deriving irmin]
-
-type inode_pointer = { index : int; hash : hash } [@@deriving irmin]
-type 'a encoding = { encoding : string; v : 'a } [@@deriving irmin]
+type inode_pointer = { index : int; hash : hash }
+type 'a encoding = { encoding : string; v : 'a }
 
 type tree = {
   depth : int;
@@ -15,41 +12,12 @@ type tree = {
 
 and vs = Values of entry encoding list | Tree of tree
 
-let mktree vs_t =
-  let open Irmin.Type in
-  record "tree" (fun depth entries_length pointers ->
-      { depth; entries_length; pointers })
-  |+ field "depth" int (fun t -> t.depth)
-  |+ field "length" int (fun t -> t.entries_length)
-  |+ field "pointers"
-       (list (pair (encoding_t inode_pointer_t) (encoding_t vs_t)))
-       (fun t -> t.pointers)
-  |> sealr
-
-let mkvs_t tree_t =
-  let open Irmin.Type in
-  variant "t" (fun values tree -> function
-    | Values l -> values l | Tree t -> tree t)
-  |~ case1 "Values" (list (encoding_t entry_t)) (fun l -> Values l)
-  |~ case1 "Tree" tree_t (fun t -> Tree t)
-  |> sealv
-
-let _, vs_t = Irmin.Type.mu2 (fun tree_t vs_t -> (mktree vs_t, mkvs_t tree_t))
-let enc_vs_t = encoding_t vs_t
-
 module Util = struct
   module Blake2b = Digestif.Make_BLAKE2B (struct
     let digest_size = 32
   end)
 
   let blake2b s = Blake2b.digest_string s |> Blake2b.to_raw_string
-
-  (* let fixed_int64 i =
-   *   let buf = Buffer.create 8 in
-   *   Buffer.add_int64_be buf i;
-   *   Buffer.contents buf
-   *
-   * let fixed_int i = Int64.of_int i |> fixed_int64 *)
 
   let leb128_int i =
     (* The final size of the result may be smaller (but not greater) than 8. *)
@@ -61,6 +29,49 @@ module Util = struct
       if i = 0 then Buffer.contents buf else loop i
     in
     loop i
+
+  let ( ** ) = Int32.mul
+  let ( ^= ) a b = a := Int32.logxor !a b
+  let ( *= ) a b = a := !a ** b
+  let ( << ) = Int32.shift_left
+  let ( >> ) = Int32.shift_right_logical
+  let ( ||| ) = Int32.logor
+  let ( &&& ) = Int32.logand
+
+  let mix h w =
+    w *= 0xcc9e2d51l;
+    w := !w << 15 ||| (!w >> 17);
+    w *= 0x1b873593l;
+    h ^= !w;
+    h := !h << 13 ||| (!h >> 19);
+    h := Int32.add (!h ** 5l) 0xe6546b64l
+
+  let last s off =
+    Bytes.init 4 (fun i ->
+        let j = off + i in
+        if j >= String.length s then '\000' else s.[j])
+
+  let ocaml_hash seed s =
+    let h = ref (Int32.of_int seed) in
+    let w = ref 0l in
+    let rec loop i =
+      if i + 4 > String.length s then i
+      else (
+        w := Bytes.get_int32_le (Bytes.unsafe_of_string s) i;
+        mix h w;
+        loop (i + 4))
+    in
+    let i = loop 0 in
+    if i <> String.length s then (
+      w := Bytes.get_int32_le (last s i) 0;
+      mix h w);
+    h ^= Int32.of_int (String.length s);
+    h ^= (!h >> 16);
+    h *= 0x85ebca6bl;
+    h ^= (!h >> 13);
+    h *= 0xc2b2ae35l;
+    h ^= (!h >> 16);
+    Int32.to_int (!h &&& 0x3FFFFFFFl)
 end
 
 let ( ++ ) = ( ^ )
@@ -71,57 +82,30 @@ let char_of_kind = function Content -> '\001' | Node -> '\000'
 
 let to_enc_entry ({ name; kind; hash } as entry) =
   let encoding =
-    Util.leb128_int (String.length name)
-    ++ name
-    ++. char_of_kind kind
-    ++ Util.blake2b hash
+    Util.leb128_int (String.length name) ++ name ++. char_of_kind kind ++ hash
   in
-  (* Format.eprintf "Enc entry: %S(%s):@.  %S (%d)@.  %S@."
-   *   (leb128_int @@ String.length name)
-   *   name encoding (String.length encoding)
-   *   (Irmin.Type.(unstage (to_bin_string entry_t)) entry); *)
   { encoding; v = entry }
 
 let to_enc_pointer ({ index; hash } as pointer) =
   let encoding = Util.leb128_int index ++ hash in
-  (* Format.eprintf "Enc pointer: @.  %S (%d)@.  %S@." encoding
-   *   (String.length encoding)
-   *   (Irmin.Type.(unstage (to_bin_string inode_pointer_t)) pointer); *)
   { encoding; v = pointer }
 
 let to_enc_vs vs =
   let encoding =
     match vs with
     | Values l ->
-        (* Format.eprintf "Debug V:@.%d@[<v 0>@,%a@]@." (List.length l)
-         *   (Format.pp_print_list (fun fmt e ->
-         *        Format.fprintf fmt "%S" e.encoding))
-         *   l;
-         * Format.eprintf "128 : %S@." (Util.leb128_int (List.length l)); *)
         '\000' +.+ Util.leb128_int (List.length l) =++ ((fun e -> e.encoding), l)
     | Tree { depth; entries_length; pointers } ->
-        (* Format.eprintf "Debug T:@.%d@[<v 0>@,%a@]@." (List.length pointers)
-         *   (Format.pp_print_list (fun fmt (p, _) ->
-         *        Format.fprintf fmt "%S" p.encoding))
-         *   pointers; *)
         '\001'
         +.+ Util.leb128_int depth
         ++ Util.leb128_int entries_length
         ++ Util.leb128_int (List.length pointers)
         =++ ((fun (p, _) -> p.encoding), pointers)
   in
-  (* Format.eprintf "Enc value: @.  %S (%d)@.  %S@." encoding
-   *   (String.length encoding)
-   *   (Irmin.Type.(unstage (to_bin_string vs_t)) vs); *)
   { encoding; v = vs }
 
 let hash enc_vs = Util.blake2b enc_vs.encoding
-
-let ocaml_hash seed s =
-  (* TODO *)
-  Hashtbl.seeded_hash seed s
-
-let index depth n = ocaml_hash depth n mod Conf.entries
+let index depth n = Util.ocaml_hash depth n mod Conf.entries
 
 let subset ~depth i l =
   List.filter (fun { v = { name; _ }; _ } -> index depth name = i) l

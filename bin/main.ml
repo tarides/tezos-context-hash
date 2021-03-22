@@ -302,16 +302,6 @@ let partition n =
   let inode = Inter.Val.v lb in
   let rep = Inter.Val.to_concrete inode in
   let part = Partition.partition le in
-  (* Format.eprintf "Inode:@.%a@." Nodes.to_json [ inode ]; *)
-  Format.eprintf "Partition:@.%a@."
-    Irmin.Type.(pp_json ~minify:false Partition.enc_vs_t)
-    part;
-  (* Format.eprintf "Hash inode: %a@."
-   *   Irmin.Type.(pp Inter.Val.hash_t)
-   *   (Inter.Val.hash inode);
-   * Format.eprintf "Hash parti: %a@."
-   *   Irmin.Type.(pp Inter.Val.hash_t)
-   *   (Store.Contents.hash (Bytes.of_string part.vsencoding)); *)
   check_struct rep part.v
 
 open Cmdliner

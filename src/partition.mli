@@ -13,4 +13,3 @@ type tree = {
 and vs = Values of entry encoding list | Tree of tree
 
 val partition : entry list -> vs encoding
-val enc_vs_t : vs encoding Irmin.Type.t
