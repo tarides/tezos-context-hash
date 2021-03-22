@@ -73,7 +73,7 @@ let commit { tree; parents; metadata } =
     See section `Trees` of SPEC.md *)
 
 type entry_kind = Content | Node
-type entry = { name : string; kind : entry_kind; hash : hash }
+type tree_entry = { name : string; kind : entry_kind; hash : hash }
 
 (** {3 Nodes}
 
@@ -82,7 +82,7 @@ type entry = { name : string; kind : entry_kind; hash : hash }
 
     See section `Nodes` of SPEC.md *)
 
-type node_tree = entry list
+type node_tree = tree_entry list
 
 let node_entry { name; kind; hash } =
   (match kind with
@@ -111,7 +111,7 @@ let inode_entry { name; kind; hash } =
   ++ (match kind with Content -> "\001" | Node -> "\000")
   ++ hash
 
-type inode_value = entry list
+type inode_value = tree_entry list
 
 let inode_value v =
   assert (List.length v <= 32);
