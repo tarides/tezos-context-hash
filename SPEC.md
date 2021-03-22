@@ -2,14 +2,14 @@
 
 | **Status** | Stable     |
 |--|--|
-| **Version** | 2021-03-08   |
+| **Version** | 2021-03-22   |
 | **Permalink**  | https://hackmd.io/@samoht/tezos-context-hash |
 |**Contact** | https://github.com/tarides/tezos-context-hash/issues |
 
 This document provides a specification for computing the encoding of each kind of objects present in the Tezos context. Tezos then applies 32-bytes [BLAKE2B-256](https://www.blake2.net/) to compute context hashes from these encodings. Moreover, hashes are displayed using a [base 58](https://en.bitcoinwiki.org/wiki/Base58) representation and are prefixed by `Co` and suffixed by a 4-byte checksum. For instance, `CoVGWKM7Ufu6dk74CEQz3MgffhUPFyeaMCD6eS3Q8o7mDis8n1Vi` is a valid context hash for Tezos.
 
 :::info
-**Notations:** 
+**Notations:**
 
 - `blake2b(s)` is the BLAKE2B-256 hash of the string `s`.
 - `encode(v)` is the raw sequence of bytes representing the encoding of `v`.
@@ -38,11 +38,11 @@ The Tezos context has two modes for encoding integers:
 :::info
 **Notations:**
 
-- we will denote the encoding of integers with **8** when fixed length encoding is used, and **(LEB128)** when the variable length encoding is used, and the size is not known in advance. 
+- we will denote the encoding of integers with **8** when fixed length encoding is used, and **(LEB128)** when the variable length encoding is used, and the size is not known in advance.
 - We will write `\x` instead of the binary representation of the integer `x`, e.g. `\32` instead of `\000\000\000\000\000\000\000\032` for fixed-length encoding or `\032` for variable-length encoding.
 :::
 
-:::warning 
+:::warning
 **Example: encoding the integer `1298532`.**
 </br>
 
@@ -62,9 +62,9 @@ Contents are raw sequences of bytes. Encoding contents is done by concatenating 
 
 |     8     | `len(v)` |
 |:---------:|:------:|
-| `\len(v)` |  `v`   | 
+| `\len(v)` |  `v`   |
 
-:::warning 
+:::warning
 **Example: encoding the contents `"delphi_007"`.**
 </br>
 |   8   |      10      |
@@ -76,7 +76,7 @@ Contents are raw sequences of bytes. Encoding contents is done by concatenating 
 
 Commits are immutable objects that contain metadata about changes done to the context, as well as pointers to previous commits and to the current Merkle trees root. These objects allow Tezos to track the history of all the changes done to the context.
 
-**Commits metadata are triplet: *date $\times$ author $\times$ message*.** *Date* values are expressed in seconds and are stored as an `int64`. *Author* is usually the string `"Tezos"` but could change in the future. *Message* is a string containing information about the corresponding Tezos block such as its level, fit, priority and number of operations.  
+**Commits metadata are triplet: *date $\times$ author $\times$ message*.** *Date* values are expressed in seconds and are stored as an `int64`. *Author* is usually the string `"Tezos"` but could change in the future. *Message* is a string containing information about the corresponding Tezos block such as its level, fit, priority and number of operations.
 
 A commit metadata is encoded as follows:
 
@@ -92,7 +92,7 @@ A commit metadata is encoded as follows:
 | `\000\000\000\000\039\029\030\159` | `\000\000\000\000\000\000\000\005` | `Tezos` | `\000\000\000\000\000\000\000\03` | `msg` |
 :::
 
-**Commits are triplet: *tree $\times$ parents $\times$ metadata*.** *Tree* is a hash pointing to the Merkle tree root. *Parents* are a list of commit hashes which are immediate predecessors of the current commit. A commit with $k$ parent hashes $p_1$, ..., $p_k$ is encoded as follows:
+**Commits are triplet: *tree $\times$ parents $\times$ metadata*.** *Tree* is a hash pointing to the Merkle tree root. *Parents* is a lexicographically sorted list of commit hashes which are immediate predecessors of the current commit. A commit with $k$ parent hashes $p_1$, ..., $p_k$ is encoded as follows:
 
 |   8   |   32   |  8  |   8   |  32   | ... |   8   |  32   |          m          |
 |:-----:|:------:|:---:|:-----:|:-----:|:---:|:-----:|:-----:|:-------------------:|
@@ -110,15 +110,15 @@ where *m = len(encode(metadata))*.
 
 :::
 
-## Trees 
+## Trees
 
-The Tezos context contains [Merkle trees](https://en.wikipedia.org/wiki/Merkle_tree). Contents encoding has already been explained [in a previous section](#Contents). This section presents the encoding for internal nodes of the tree. In Tezos, tree nodes are equivalent to a list of entries, pointing to the immediate children of the node. 
+The Tezos context contains [Merkle trees](https://en.wikipedia.org/wiki/Merkle_tree). Contents encoding has already been explained [in a previous section](#Contents). This section presents the encoding for internal nodes of the tree. In Tezos, tree nodes are equivalent to a list of entries, pointing to the immediate children of the node.
 
 **A tree entry is a triplet: *name* $\times$ *kind* $\times$ *hash*.** *Names* are strings, similar to file or directory names. *Kind* distinguishes between tree and contents and *hash* points to other data present in the context. Its encoding will depend on the internal representation of nodes.
 
-The complexity of verifying (and computing) the hash of tree nodes depends on the number of its entries. To reduce that cost on large nodes, Tezos distinguishes between tree nodes holding at most 256 entries and tree nodes with more than 256 ones. The small nodes are represented as a list of entries and have a linear complexity, while large nodes are using an optimised representation -- similar to inode tables implemented by filesystems -- to handle large directories with a logarithmic complexity. 
+The complexity of verifying (and computing) the hash of tree nodes depends on the number of its entries. To reduce that cost on large nodes, Tezos distinguishes between tree nodes holding at most 256 entries and tree nodes with more than 256 ones. The small nodes are represented as a list of entries and have a linear complexity, while large nodes are using an optimised representation -- similar to inode tables implemented by filesystems -- to handle large directories with a logarithmic complexity.
 
-Until now in Tezos (i.e. Edo), all the directories have less than 256 entries and so do not use this optimised representation. This might change with sappling.
+Until now in Tezos (i.e. Edo), all the directories have at most 256 entries and so do not use this optimised representation. This might change with sappling.
 
 :::info
 **Tree nodes representations**
@@ -130,7 +130,7 @@ The encoding of a tree node depends on the number `n` of entries present in that
 
 ### Nodes
 
-Directories with less than 256 entries are encoded as a flat list of entries.
+Directories with at most 256 entries are encoded as a flat list of entries.
 
 As already described above, **a tree entry is a triplet: *name $\times$ kind $\times$ hash*.** An entry is encoded as follow:
 
@@ -168,13 +168,13 @@ Because of storage optimisations implemented in Tezos, the encoding of directori
 
 #### Inode values
 
-An inode value contains a flat list of tree entries. 
+An inode value contains a flat list of tree entries.
 
 As already described, **a tree entry is a triplet: *name $\times$ kind $\times$ hash*.** The encoding for inode entries is more compact than for node entries. For inodes, entries are encoded as follows:
 
 |  `(LEB128)`  | `len(name)` |   1    |   32   |
 |:------------:|:-----------:|:------:|:------:|
-| `\len(name)` |   `name`    | `kind` | `hash` | 
+| `\len(name)` |   `name`    | `kind` | `hash` |
 
 where *kind* is `\000` for nodes, and `\001` for contents.
 
@@ -200,13 +200,13 @@ where *$n_i$ = len(encode$e_i$))* and *name($e_1$) $\le$ ... $\le$ name($e_n$)*.
 
 Inode trees contain a list of inode pointers
 
-**An inode pointer is a pair: *index $\times$ hash*.** *index* is always strictly less than 32. A pointer is encoded as follows:
+**An inode pointer is a pair: *index $\times$ hash*.** *index* is always less than 32. A pointer is encoded as follows:
 
 |    1    |   32   |
 |:-------:|:------:|
-| `index` | `hash` | 
+| `index` | `hash` |
 
-**An inode tree is a triplet: *depth $\times$ len(entries) $\times$ pointers*.** The number of pointers is always less than 32. $pointers$ is a sparse list of pointers: every pointer in the list has a distinct index and the list is ordered by increasing indices, but some indices might be missing. Moreover, `len(entries)` aggregates the total number of entries that are reachable via the pointers. This information can for instance be used to decide whenever an inode value has to be converted into a inode tree (or the reverse) when a new entry is added (or removed) from the tree.
+**An inode tree is a triplet: *depth $\times$ len(entries) $\times$ pointers*.** The number of pointers is always less than or equal to 32. $pointers$ is a sparse list of pointers: every pointer in the list has a distinct index and the list is ordered by increasing indices, but some indices might be missing. Moreover, `len(entries)` aggregates the total number of entries that are reachable via the pointers. This information can for instance be used to decide whenever an inode value has to be converted into a inode tree (or the reverse) when a new entry is added (or removed) from the tree.
 
 An inode tree with `k` pointers $p_1$, $p_2$, ... $p_k$ is encoded as follow:
 
@@ -256,7 +256,7 @@ uint32 ocaml_hash(seed: <uint32>, s: <string>) {
     uint32 h = seed;
     for (i = 0; i < len(s); i = i + 4) {
         uint32 w;
-        if big_endian_machine     
+        if big_endian_machine
             w = rev(s[i:i+4])
         else
             w = s[i:i+4];
@@ -266,8 +266,8 @@ uint32 ocaml_hash(seed: <uint32>, s: <string>) {
     if i <> len {
         // Bytes that are out of range should be set to \000.
         uint32 w = rev(s[i:i+4]);
-        mix(h, w);   
-    }    
+        mix(h, w);
+    }
     h ^= (uint32) len(s);
     h ^= h >> 16;
     h *= 0x85ebca6b;
@@ -309,6 +309,7 @@ The encoding of a tree node with $n$ entries $X$, when $n > 256$, is the encodin
 
 - The encoding of $\textbf{Value}(X)$ is defined in section about [inode values](#Inode-values).
 - The encoding of $\textbf{Tree}(d \times l \times P)$ is defined in section about [inode trees](#Inode-trees).
+- The encoding of $\textbf{Empty}$ is the encoding of $\textbf{Value []}$.
 
 ##### Inode search
 
@@ -337,6 +338,6 @@ $$
 &\qquad t'_j = \textbf{add }(d+1, e, t_j)\\
 &\qquad p'_j = \textbf{Pointer }(j \times hash(t'_j))\\
 &\qquad P' = \bigcup p_{i} \cup \{ p'_j \} - \{ p_j \}\\
-&\qquad \textbf{Tree } (d \times (len+1) \times P') 
+&\qquad \textbf{Tree } (d \times (len+1) \times P')
 \end{align}
 $$
