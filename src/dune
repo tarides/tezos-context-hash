@@ -1,3 +1,4 @@
 (library
  (name irmin_tezos)
+ (public_name tezos-context-hash)
  (libraries fmt zarith irmin irmin-pack))
