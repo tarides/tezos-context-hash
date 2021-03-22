@@ -2,7 +2,7 @@
 
 | **Status** | Stable     |
 |--|--|
-| **Version** | 2021-03-08   |
+| **Version** | 2021-03-22   |
 | **Permalink**  | https://hackmd.io/@samoht/tezos-context-hash |
 |**Contact** | https://github.com/tarides/tezos-context-hash/issues |
 
@@ -92,7 +92,7 @@ A commit metadata is encoded as follows:
 | `\000\000\000\000\039\029\030\159` | `\000\000\000\000\000\000\000\005` | `Tezos` | `\000\000\000\000\000\000\000\03` | `msg` |
 :::
 
-**Commits are triplet: *tree $\times$ parents $\times$ metadata*.** *Tree* is a hash pointing to the Merkle tree root. *Parents* are a list of commit hashes which are immediate predecessors of the current commit. A commit with $k$ parent hashes $p_1$, ..., $p_k$ is encoded as follows:
+**Commits are triplet: *tree $\times$ parents $\times$ metadata*.** *Tree* is a hash pointing to the Merkle tree root. *Parents* is a lexicographically sorted list of commit hashes which are immediate predecessors of the current commit. A commit with $k$ parent hashes $p_1$, ..., $p_k$ is encoded as follows:
 
 |   8   |   32   |  8  |   8   |  32   | ... |   8   |  32   |          m          |
 |:-----:|:------:|:---:|:-----:|:-----:|:---:|:-----:|:-----:|:-------------------:|
@@ -309,6 +309,7 @@ The encoding of a tree node with $n$ entries $X$, when $n > 256$, is the encodin
 
 - The encoding of $\textbf{Value}(X)$ is defined in section about [inode values](#Inode-values).
 - The encoding of $\textbf{Tree}(d \times l \times P)$ is defined in section about [inode trees](#Inode-trees).
+- The encoding of $\textbf{Empty}$ is the encoding of $\textbf{Value []}$.
 
 ##### Inode search
 
