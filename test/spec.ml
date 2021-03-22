@@ -116,14 +116,14 @@ type inode_value = tree_entry list
 let inode_value v =
   assert (List.length v <= 32);
   "\000"
-  ++ String.make 1 (Char.chr (List.length v))
+  ++ leb128_int (List.length v)
   ++ list inode_entry (List.sort (fun e e' -> String.compare e.name e'.name) v)
 
 type inode_pointer = { index : int; hash : hash }
 
 let inode_pointer { index; hash } =
   assert (index <= 32);
-  String.make 1 (Char.chr index) ++ hash
+  leb128_int index ++ hash
 
 type inode_tree = {
   depth : int;
@@ -136,7 +136,7 @@ let inode_tree { depth; entries_length; pointers } =
   "\001"
   ++ leb128_int depth
   ++ leb128_int entries_length
-  ++ String.make 1 (Char.chr (List.length pointers))
+  ++ leb128_int (List.length pointers)
   ++ list inode_pointer
        (List.sort (fun p p' -> Int.compare p.index p'.index) pointers)
 

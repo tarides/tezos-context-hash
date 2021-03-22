@@ -172,9 +172,9 @@ An inode value contains a flat list of tree entries.
 
 As already described, **a tree entry is a triplet: *name $\times$ kind $\times$ hash*.** The encoding for inode entries is more compact than for node entries. For inodes, entries are encoded as follows:
 
-|  `(LEB128)`  | `len(name)` |   1    |   32   |
-|:------------:|:-----------:|:------:|:------:|
-| `\len(name)` |   `name`    | `kind` | `hash` |
+|  `(LEB128)`  | `len(name)` | `(LEB128)` |   32   |
+|:------------:|:-----------:|:----------:|:------:|
+| `\len(name)` |   `name`    |   `kind`   | `hash` |
 
 where *kind* is `\000` for nodes, and `\001` for contents.
 
@@ -190,9 +190,9 @@ where *kind* is `\000` for nodes, and `\001` for contents.
 
 **An inode value is a list of at most 32 entries, sorted by lexicographic order of names.** A value with $n$ entries $e_1$, $e_2$, ... $e_n$ is encoded as follows when $n \leq 32$:
 
-|   1    |  1   |     $n_1$      | ... |     $n_k$      |
-|:------:|:----:|:--------------:|:---:|:--------------:|
-| `\000` | `\n` | `encode(_1)` | ... | `encode(e_k)` |
+|   1    |  `(LEB128)`  |     $n_1$      | ... |     $n_k$      |
+|:------:|:-----------: |:--------------:|:---:|:--------------:|
+| `\000` |     `\n`     | `encode(_1)` | ... | `encode(e_k)` |
 
 where *$n_i$ = len(encode$e_i$))* and *name($e_1$) $\le$ ... $\le$ name($e_n$)*. Hence all names must be different.
 
@@ -202,9 +202,9 @@ Inode trees contain a list of inode pointers
 
 **An inode pointer is a pair: *index $\times$ hash*.** *index* is always less than 32. A pointer is encoded as follows:
 
-|    1    |   32   |
-|:-------:|:------:|
-| `index` | `hash` |
+| `(LEB128)` |   32   |
+|:----------:|:------:|
+|  `index`   | `hash` |
 
 **An inode tree is a triplet: *depth $\times$ len(entries) $\times$ pointers*.** The number of pointers is always less than or equal to 32. $pointers$ is a sparse list of pointers: every pointer in the list has a distinct index and the list is ordered by increasing indices, but some indices might be missing. Moreover, `len(entries)` aggregates the total number of entries that are reachable via the pointers. This information can for instance be used to decide whenever an inode value has to be converted into a inode tree (or the reverse) when a new entry is added (or removed) from the tree.
 
