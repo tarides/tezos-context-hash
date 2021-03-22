@@ -118,7 +118,7 @@ The Tezos context contains [Merkle trees](https://en.wikipedia.org/wiki/Merkle_t
 
 The complexity of verifying (and computing) the hash of tree nodes depends on the number of its entries. To reduce that cost on large nodes, Tezos distinguishes between tree nodes holding at most 256 entries and tree nodes with more than 256 ones. The small nodes are represented as a list of entries and have a linear complexity, while large nodes are using an optimised representation -- similar to inode tables implemented by filesystems -- to handle large directories with a logarithmic complexity.
 
-Until now in Tezos (i.e. Edo), all the directories have less than 256 entries and so do not use this optimised representation. This might change with sappling.
+Until now in Tezos (i.e. Edo), all the directories have at most 256 entries and so do not use this optimised representation. This might change with sappling.
 
 :::info
 **Tree nodes representations**
@@ -130,7 +130,7 @@ The encoding of a tree node depends on the number `n` of entries present in that
 
 ### Nodes
 
-Directories with less than 256 entries are encoded as a flat list of entries.
+Directories with at most 256 entries are encoded as a flat list of entries.
 
 As already described above, **a tree entry is a triplet: *name $\times$ kind $\times$ hash*.** An entry is encoded as follow:
 
@@ -200,13 +200,13 @@ where *$n_i$ = len(encode$e_i$))* and *name($e_1$) $\le$ ... $\le$ name($e_n$)*.
 
 Inode trees contain a list of inode pointers
 
-**An inode pointer is a pair: *index $\times$ hash*.** *index* is always strictly less than 32. A pointer is encoded as follows:
+**An inode pointer is a pair: *index $\times$ hash*.** *index* is always less than 32. A pointer is encoded as follows:
 
 |    1    |   32   |
 |:-------:|:------:|
 | `index` | `hash` |
 
-**An inode tree is a triplet: *depth $\times$ len(entries) $\times$ pointers*.** The number of pointers is always less than 32. $pointers$ is a sparse list of pointers: every pointer in the list has a distinct index and the list is ordered by increasing indices, but some indices might be missing. Moreover, `len(entries)` aggregates the total number of entries that are reachable via the pointers. This information can for instance be used to decide whenever an inode value has to be converted into a inode tree (or the reverse) when a new entry is added (or removed) from the tree.
+**An inode tree is a triplet: *depth $\times$ len(entries) $\times$ pointers*.** The number of pointers is always less than or equal to 32. $pointers$ is a sparse list of pointers: every pointer in the list has a distinct index and the list is ordered by increasing indices, but some indices might be missing. Moreover, `len(entries)` aggregates the total number of entries that are reachable via the pointers. This information can for instance be used to decide whenever an inode value has to be converted into a inode tree (or the reverse) when a new entry is added (or removed) from the tree.
 
 An inode tree with `k` pointers $p_1$, $p_2$, ... $p_k$ is encoded as follow:
 
