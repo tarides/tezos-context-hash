@@ -77,7 +77,7 @@ type tree_entry = { name : string; kind : entry_kind; hash : hash }
 
 (** {3 Nodes}
 
-    When a tree contains less than 256 entries, it is encoded as a flat list of
+    When a tree contains at most 256 entries, it is encoded as a flat list of
     entries
 
     See section `Nodes` of SPEC.md *)
@@ -100,7 +100,7 @@ let node t =
 
 (** {3 Inodes}
 
-    Trees that contain 256 entries or more are first transforned into inodes,
+    Trees that contain more than 256 entries are first transforned into inodes,
     before their final encoding.
 
     See section `Inodes values` of SPEC.md *)
@@ -142,9 +142,48 @@ let inode_tree { depth; entries_length; pointers } =
 
 (** {4 Internal tree construction} *)
 
+let ( ** ) = Int32.mul
+let ( ^= ) a b = a := Int32.logxor !a b
+let ( *= ) a b = a := !a ** b
+let ( << ) = Int32.shift_left
+let ( >> ) = Int32.shift_right_logical
+let ( ||| ) = Int32.logor
+let ( &&& ) = Int32.logand
+
+let mix h w =
+  w *= 0xcc9e2d51l;
+  w := !w << 15 ||| (!w >> 17);
+  w *= 0x1b873593l;
+  h ^= !w;
+  h := !h << 13 ||| (!h >> 19);
+  h := Int32.add (!h ** 5l) 0xe6546b64l
+
+let last s off =
+  Bytes.init 4 (fun i ->
+      let j = off + i in
+      if j >= String.length s then '\000' else s.[j])
+
 let ocaml_hash seed s =
-  (* TODO *)
-  Hashtbl.seeded_hash seed s
+  let h = ref (Int32.of_int seed) in
+  let w = ref 0l in
+  let rec loop i =
+    if i + 4 > String.length s then i
+    else (
+      w := Bytes.get_int32_le (Bytes.unsafe_of_string s) i;
+      mix h w;
+      loop (i + 4))
+  in
+  let i = loop 0 in
+  if i <> String.length s then (
+    w := Bytes.get_int32_le (last s i) 0;
+    mix h w);
+  h ^= Int32.of_int (String.length s);
+  h ^= (!h >> 16);
+  h *= 0x85ebca6bl;
+  h ^= (!h >> 13);
+  h *= 0xc2b2ae35l;
+  h ^= (!h >> 16);
+  Int32.to_int (!h &&& 0x3FFFFFFFl)
 
 let index d n = ocaml_hash d n mod 32
 

@@ -162,6 +162,7 @@ module P = struct
 end
 
 let positive_int = int_within (Gen.int Int.max_int)
+let short_int = int_within (Gen.lt 128)
 
 let bytes =
   easily_constructible G.bytes (fun b ->
@@ -213,7 +214,7 @@ let () =
   let spec = commit ^> string in
   declare "commit" spec R.commit C.commit;
 
-  let spec = positive_int ^> string ^> int in
+  let spec = short_int ^> string ^> int in
   declare "ocaml_hash" spec R.ocaml_hash C.ocaml_hash;
 
   let spec = short_entry_list ^> string in
