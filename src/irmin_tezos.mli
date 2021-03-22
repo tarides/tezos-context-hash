@@ -24,6 +24,7 @@
 (*****************************************************************************)
 
 module Encoding = Encoding
+module Partition = Partition
 module Conf : Irmin_pack.Config.S
 open Encoding
 
