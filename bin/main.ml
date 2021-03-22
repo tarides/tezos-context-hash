@@ -246,6 +246,21 @@ let check_kind msg expected got =
     Fmt.epr "%s: expected %s, got %s\n%!" msg exp got;
     failwith __LOC__)
 
+let to_irmin_hash =
+  let encode =
+    Irmin.Type.(unstage (of_bin_string Irmin_tezos.Encoding.Hash.t))
+  in
+  fun x -> encode x |> Result.get_ok
+
+let with_encoder encoder x =
+  let buf = Buffer.create 0 in
+  encoder x (Buffer.add_string buf);
+  Buffer.contents buf
+
+let to_string =
+  let encode = Irmin.Type.(unstage (encode_bin Irmin_tezos.Encoding.Hash.t)) in
+  with_encoder encode
+
 let rec check_struct i p =
   match (i, p) with
   | Inter.Val.Concrete.Tree t1, Partition.Tree t2 ->
@@ -254,7 +269,7 @@ let rec check_struct i p =
       List.iter2
         (fun Inter.Val.Concrete.{ index; tree; pointer } (ep, evs) ->
           check_int "Pointer index" index ep.v.index;
-          check_hash "Pointer hash" pointer ep.v.hash;
+          check_hash "Pointer hash" pointer (to_irmin_hash ep.v.hash);
           check_struct tree evs.v)
         t1.pointers t2.pointers
   | Inter.Val.Concrete.Value l1, Values l2 ->
@@ -262,31 +277,32 @@ let rec check_struct i p =
         (fun Inter.Val.Concrete.{ name; kind; hash } ee ->
           check_string "Entry name" name ee.v.name;
           check_kind "Entry kind" kind ee.v.kind;
-          check_hash "Entry hash" hash ee.v.hash)
+          check_hash "Entry hash" hash (to_irmin_hash ee.v.hash))
         l1 l2
   | _ -> assert false
 
 let partition n =
-  let le =
-    List.init n (fun i ->
-        {
-          name = Format.sprintf "%d" i;
-          kind = (if i mod 2 = 0 then Content else Node);
-          hash = Gen.hash ();
-        })
-  in
   let lb =
+    List.init n (fun i ->
+        ( Format.sprintf "%d" i,
+          let hash = Gen.hash () in
+          if i mod 2 = 0 then `Contents (hash, ()) else `Node hash ))
+  in
+  let le =
     List.map
-      (fun { name; kind; hash } ->
-        ( name,
-          match kind with Content -> `Contents (hash, ()) | Node -> `Node hash
-        ))
-      le
+      (fun (name, kind) ->
+        let kind, hash =
+          match kind with
+          | `Contents (hash, ()) -> (Content, hash)
+          | `Node hash -> (Node, hash)
+        in
+        { name; kind; hash = to_string hash })
+      lb
   in
   let inode = Inter.Val.v lb in
   let rep = Inter.Val.to_concrete inode in
   let part = Partition.partition le in
-  Format.eprintf "Inode:@.%a@." Nodes.to_json [ inode ];
+  (* Format.eprintf "Inode:@.%a@." Nodes.to_json [ inode ]; *)
   Format.eprintf "Partition:@.%a@."
     Irmin.Type.(pp_json ~minify:false Partition.enc_vs_t)
     part;
