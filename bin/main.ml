@@ -1,4 +1,4 @@
-open Irmin_tezos
+open Tezos_context_hash
 open Encoding
 module Inter = Irmin_pack.Private.Inode.Make_intermediate (Conf) (Hash) (Node)
 
