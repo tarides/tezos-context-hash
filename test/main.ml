@@ -1,11 +1,31 @@
 open Monolith
 
-module type Testable = sig
+module Types = struct
   type hash = string
-  type commit_metadata = { date : int64; author : string; message : string }
-  type commit = { tree : hash; parents : hash list; metadata : commit_metadata }
-  type entry_kind = Content | Node
-  type tree_entry = { name : string; kind : entry_kind; hash : hash }
+
+  type commit_metadata = Spec.commit_metadata = {
+    date : int64;
+    author : string;
+    message : string;
+  }
+
+  type commit = Spec.commit = {
+    tree : hash;
+    parents : hash list;
+    metadata : commit_metadata;
+  }
+
+  type entry_kind = Spec.entry_kind = Content | Node
+
+  type tree_entry = Spec.tree_entry = {
+    name : string;
+    kind : entry_kind;
+    hash : hash;
+  }
+end
+
+module type Testable = sig
+  include module type of Types
 
   val fixed_int : int -> string
   val leb128_int : int -> string
@@ -17,14 +37,8 @@ end
 
 module C : Testable = Spec
 
-module R :
-  Testable
-    with type hash = C.hash
-     and type commit_metadata = C.commit_metadata
-     and type commit = C.commit
-     and type entry_kind = C.entry_kind
-     and type tree_entry = C.tree_entry = struct
-  type hash = string
+module R : Testable = struct
+  include Types
 
   let with_encoder encoder x =
     let buf = Buffer.create 0 in
@@ -51,18 +65,6 @@ module R :
     in
     with_encoder encode
 
-  type commit_metadata = C.commit_metadata = {
-    date : int64;
-    author : string;
-    message : string;
-  }
-
-  type commit = C.commit = {
-    tree : hash;
-    parents : hash list;
-    metadata : commit_metadata;
-  }
-
   let commit =
     let encode =
       Irmin.Type.(unstage (pre_hash Irmin_tezos.Encoding.Commit.t))
@@ -76,14 +78,6 @@ module R :
         ~parents:(List.map to_irmin_hash parents)
     in
     fun c -> with_encoder encode (to_irmin_commit c)
-
-  type entry_kind = C.entry_kind = Content | Node
-
-  type tree_entry = C.tree_entry = {
-    name : string;
-    kind : entry_kind;
-    hash : hash;
-  }
 
   let ocaml_hash = Hashtbl.seeded_hash
 
