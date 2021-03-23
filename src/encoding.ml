@@ -132,11 +132,11 @@ module Commit = struct
 end
 
 module Contents = struct
-  type t = bytes
+  type t = string
 
-  let ty = Irmin.Type.(pair (bytes_of `Int64) unit)
+  let ty = Irmin.Type.(pair (string_of `Int64) unit)
   let pre_hash_ty = Irmin.Type.(unstage (pre_hash ty))
   let pre_hash_v1 x = pre_hash_ty (x, ())
-  let t = Irmin.Type.(like bytes ~pre_hash:(stage @@ fun x -> pre_hash_v1 x))
+  let t = Irmin.Type.(like string ~pre_hash:(stage @@ fun x -> pre_hash_v1 x))
   let merge = Irmin.Merge.(idempotent (Irmin.Type.option t))
 end

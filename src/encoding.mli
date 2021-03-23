@@ -24,7 +24,7 @@
 (*****************************************************************************)
 
 module Hash : Irmin.Hash.S
-module Contents : Irmin.Contents.S with type t = bytes
+module Contents : Irmin.Contents.S with type t = string
 module Metadata : Irmin.Metadata.S with type t = unit
 module Path : Irmin.Path.S with type step = string and type t = string list
 module Branch : Irmin.Branch.S with type t = string

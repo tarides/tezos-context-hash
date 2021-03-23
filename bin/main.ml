@@ -59,11 +59,9 @@ module Gen = struct
   let int () = Random.int ((1 lsl 30) - 1)
   let fixed_string n () = String.init n (fun _ -> char ())
   let string () = fixed_string (1 + Random.int (1 lsl 5)) ()
-  let fixed_bytes n () = Bytes.init n (fun _ -> char ())
-  let bytes () = fixed_bytes (Random.int (1 lsl 10)) ()
   let fixed_list n gen () = List.init n (fun _ -> gen ())
   let pair gen1 gen2 () = (gen1 (), gen2 ())
-  let content () = bytes ()
+  let content () = string ()
   let hash () = content () |> Store.Contents.hash
 
   let atom () =
