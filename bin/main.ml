@@ -1,6 +1,6 @@
 open Tezos_context_hash
 open Encoding
-module Inter = Irmin_pack.Private.Inode.Make_intermediate (Conf) (Hash) (Node)
+module Inter = Irmin_pack.Private.Inode.Make_internal (Conf) (Hash) (Node)
 
 module Spec = struct
   type kind = Tree | Contents [@@deriving irmin]
