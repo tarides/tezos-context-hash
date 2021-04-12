@@ -24,7 +24,7 @@
 (*****************************************************************************)
 
 module Encoding = Encoding
-module Conf : Irmin_pack.Config.S
+module Conf : Irmin_pack.Conf.S
 open Encoding
 
 module Store : sig
