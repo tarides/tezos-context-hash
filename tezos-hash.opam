@@ -19,11 +19,17 @@ depends: [
   "repr"
   "irmin"
   "zarith"
+  "digestif" {>= "0.9.0"}
+  "ppx_repr" {>= "0.2.1"}
 ]
+available: arch = "x86_64"
 build: [
   ["dune" "subst"] {dev}
   ["dune" "build" "-p" name "-j" jobs "@install"]
   ["dune" "build" "-p" name "-j" jobs "@runtest" {with-test}]
 ]
-available:[arch = "x86_64"]
 dev-repo: "git+https://github.com/tarides/tezos-context-hash.git"
+pin-depends: [
+  "irmin.2.5.1"
+  "git+https://github.com/mirage/irmin.git#5fd54838c5e8eb9bfa4c02170df30698f78b0201"
+]
