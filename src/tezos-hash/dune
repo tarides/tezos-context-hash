@@ -1,6 +1,0 @@
-(library
- (public_name tezos-hash)
- (name tezos_hash)
- (libraries zarith repr irmin digestif)
- (preprocess
-  (pps ppx_repr)))

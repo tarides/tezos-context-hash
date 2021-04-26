@@ -26,7 +26,7 @@
 module Path = Irmin.Path.String_list
 module Metadata = Irmin.Metadata.None
 module Branch = Irmin.Branch.String
-module Hash : Irmin.Hash.S = Tezos_hash.Hash
+module Hash : Irmin.Hash.S = Tezos_context_hash.Hash
 
 module Node : Irmin.Private.Node.Maker = struct
   module Make
