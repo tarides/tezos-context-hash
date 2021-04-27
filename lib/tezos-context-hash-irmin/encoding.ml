@@ -108,6 +108,7 @@ module Commit : Irmin.Private.Commit.Maker = struct
     let pre_hash_v1 t = pre_hash_v1_t (V1.import t)
     let t = Irmin.Type.(like t ~pre_hash:(stage @@ fun x -> pre_hash_v1 x))
   end
+  module Info = Irmin.Info.Default
 end
 
 module Contents = struct
