@@ -23,20 +23,10 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module Encoding = Encoding
-module Conf : Irmin_pack.Conf.S
-open Encoding
+type t
 
-module Store : sig
-  include
-    Irmin.S
-      with type key = Path.t
-       and type step = Path.step
-       and type metadata = Metadata.t
-       and type contents = Contents.t
-       and type branch = Branch.t
-       and type hash = Hash.t
-       and type Private.Remote.endpoint = unit
-
-  val reconstruct_index : ?output:string -> Irmin.config -> unit
-end
+val t : t Repr.t
+val hash : ((string -> unit) -> unit) -> t
+val short_hash : t -> int
+val hash_size : int
+val of_string : string -> (t, [ `Msg of string ]) result

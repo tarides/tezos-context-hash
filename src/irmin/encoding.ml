@@ -26,44 +26,7 @@
 module Path = Irmin.Path.String_list
 module Metadata = Irmin.Metadata.None
 module Branch = Irmin.Branch.String
-
-module Hash : Irmin.Hash.S = struct
-  module H = Digestif.Make_BLAKE2B (struct
-    let digest_size = 32
-  end)
-
-  type t = H.t
-
-  let prefix = "\079\199" (* Co(52) *)
-
-  let pp ppf t =
-    let s = H.to_raw_string t in
-    Base58.pp ppf (Base58.encode ~prefix s)
-
-  let of_string x =
-    match Base58.decode ~prefix (Base58 x) with
-    | Some x -> Ok (H.of_raw_string x)
-    | None ->
-        Error (`Msg (Format.asprintf "Failed to read b58check_encoding data"))
-
-  let short_hash_string = Irmin.Type.(unstage (short_hash string))
-
-  let short_hash_staged =
-    Irmin.Type.stage @@ fun ?seed t ->
-    short_hash_string ?seed (H.to_raw_string t)
-
-  let t : t Irmin.Type.t =
-    Irmin.Type.map ~pp ~of_string
-      Irmin.Type.(string_of (`Fixed H.digest_size))
-      ~short_hash:short_hash_staged H.of_raw_string H.to_raw_string
-
-  let short_hash =
-    let f = short_hash_string ?seed:None in
-    fun t -> f (H.to_raw_string t)
-
-  let hash_size = H.digest_size
-  let hash = H.digesti_string
-end
+module Hash : Irmin.Hash.S = Tezos_context_hash.Hash
 
 module Node : Irmin.Private.Node.Maker = struct
   module Make
