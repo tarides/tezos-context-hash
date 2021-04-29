@@ -20,12 +20,20 @@ complies with the specification.
 ")
  (depends
   (alcotest :with-test)
-  cmdliner
   (digestif (>= 0.9.0))
   fmt
-  (irmin (> 2.5.3))
-  irmin-pack
-  ppx_irmin
   repr
-  yojson
   zarith))
+
+(package
+ (name tezos-context-hash-irmin)
+ (synopsis "Irmin implementation of the Tezos context hash specification")
+ (description "Irmin implementation of the Tezos context hash specification")
+ (depends
+  tezos-context-hash
+  (irmin (> 2.5.3))
+  cmdliner
+  fmt
+  yojson
+  irmin-pack
+  ppx_irmin))
