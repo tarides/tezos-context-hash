@@ -33,9 +33,6 @@ end
 
 module Store =
   Irmin_pack.Make_ext
-    (struct
-      let io_version = `V1
-    end)
     (Conf)
     (Metadata)
     (Contents)

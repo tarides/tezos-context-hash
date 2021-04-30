@@ -1,6 +1,8 @@
 open Tezos_context_hash
 open Encoding
-module Inter = Irmin_pack.Private.Inode.Make_intermediate (Conf) (Hash) (Node)
+module Index = Irmin_pack.Index.Make (Hash)
+module Pack = Irmin_pack.Pack.File (Index) (Hash)
+module Inter = Irmin_pack.Private.Inode.Make (Conf) (Hash) (Pack) (Node)
 
 module Spec = struct
   type kind = Tree | Contents [@@deriving irmin]
@@ -8,7 +10,7 @@ module Spec = struct
   type entry = { name : Node.step; kind : kind; hash : Node.hash }
   [@@deriving irmin]
 
-  type inode = Inter.Val.Concrete.t [@@deriving irmin]
+  type inode = Inter.Concrete.t [@@deriving irmin]
 
   type node = { hash : Node.hash; bindings : entry list; inode : inode option }
   [@@deriving irmin]
@@ -24,7 +26,7 @@ module Spec = struct
       | Tree -> `Node e.hash
       | Contents -> `Contents (e.hash, Metadata.default) )
 
-  let inode = Inter.Val.to_concrete
+  let inode = Inter.to_concrete
 
   let of_t (t : Inter.Val.t) =
     let inode = if Inter.Val.stable t then None else Some (inode t) in

@@ -46,14 +46,13 @@ module Hash : Irmin.Hash.S = struct
     | None ->
         Error (`Msg (Format.asprintf "Failed to read b58check_encoding data"))
 
-  let short_hash_string = Irmin.Type.(unstage (short_hash string))
+  let short_hash_string = Irmin.Type.(short_hash string)
 
-  let short_hash_staged =
-    Irmin.Type.stage @@ fun ?seed t ->
+  let short_hash_staged ?seed t =
     short_hash_string ?seed (H.to_raw_string t)
 
   let t : t Irmin.Type.t =
-    Irmin.Type.map ~pp ~of_string
+    Irmin.Type.map ~cli:(pp, of_string)
       Irmin.Type.(string_of (`Fixed H.digest_size))
       ~short_hash:short_hash_staged H.of_raw_string H.to_raw_string
 
@@ -109,7 +108,7 @@ module Node = struct
     let entries_t : entry list Irmin.Type.t =
       Irmin.Type.(list ~len:`Int64 entry_t)
 
-    let pre_hash_entries = Irmin.Type.(unstage (pre_hash entries_t))
+    let pre_hash_entries = Irmin.Type.(pre_hash entries_t)
     let compare_entry (x, _) (y, _) = String.compare x y
 
     let pre_hash t =
@@ -118,7 +117,7 @@ module Node = struct
 
   include M
 
-  let t = Irmin.Type.(like t ~pre_hash:(stage @@ fun x -> V1.pre_hash x))
+  let t = Irmin.Type.(like t ~pre_hash:(fun x -> V1.pre_hash x))
 end
 
 module Commit = struct
@@ -126,17 +125,17 @@ module Commit = struct
   module V1 = Irmin.Private.Commit.V1 (M)
   include M
 
-  let pre_hash_v1_t = Irmin.Type.(unstage (pre_hash V1.t))
+  let pre_hash_v1_t = Irmin.Type.(pre_hash V1.t)
   let pre_hash_v1 t = pre_hash_v1_t (V1.import t)
-  let t = Irmin.Type.(like t ~pre_hash:(stage @@ fun x -> pre_hash_v1 x))
+  let t = Irmin.Type.(like t ~pre_hash:(fun x -> pre_hash_v1 x))
 end
 
 module Contents = struct
   type t = bytes
 
   let ty = Irmin.Type.(pair (bytes_of `Int64) unit)
-  let pre_hash_ty = Irmin.Type.(unstage (pre_hash ty))
+  let pre_hash_ty = Irmin.Type.(pre_hash ty)
   let pre_hash_v1 x = pre_hash_ty (x, ())
-  let t = Irmin.Type.(like bytes ~pre_hash:(stage @@ fun x -> pre_hash_v1 x))
+  let t = Irmin.Type.(like bytes ~pre_hash:(fun x -> pre_hash_v1 x))
   let merge = Irmin.Merge.(idempotent (Irmin.Type.option t))
 end
