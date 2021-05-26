@@ -22,6 +22,8 @@ depends: [
   "fmt"
   "repr"
   "zarith"
+  "monolith" {with-test}
+  "pprint" {with-test}
 ]
 build: [
   ["dune" "subst"] {pinned}
