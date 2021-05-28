@@ -28,14 +28,16 @@ module Metadata = Irmin.Metadata.None
 module Branch = Irmin.Branch.String
 module Hash : Irmin.Hash.S = Tezos_context_hash.Hash
 
-module Node : Irmin.Private.Node.Maker = struct
-  module Make
-      (Hash : Irmin.Hash.S) (Path : sig
-        type step
+module Node : Irmin.Private.Node.Maker =
+functor
+  (Hash : Irmin.Hash.S)
+  (Path : sig
+     type step
 
-        val step_t : step Irmin.Type.t
-      end)
-      (Metadata : Irmin.Metadata.S) =
+     val step_t : step Irmin.Type.t
+   end)
+  (Metadata : Irmin.Metadata.S)
+  ->
   struct
     module M = Irmin.Private.Node.Make (Hash) (Path) (Metadata)
 
@@ -96,7 +98,6 @@ module Node : Irmin.Private.Node.Maker = struct
 
     let t = Irmin.Type.(like t ~pre_hash:(stage @@ fun x -> V1.pre_hash x))
   end
-end
 
 module Commit : Irmin.Private.Commit.Maker = struct
   module Make (Hash : Irmin.Type.S) = struct
