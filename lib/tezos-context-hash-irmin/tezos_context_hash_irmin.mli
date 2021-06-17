@@ -11,7 +11,7 @@ module Store : sig
        and type contents = Contents.t
        and type branch = Branch.t
        and type hash = Hash.t
-       and type Private.Remote.endpoint = unit
+       and type Private.Sync.endpoint = unit
 
   val reconstruct_index : ?output:string -> Irmin.config -> unit
 end

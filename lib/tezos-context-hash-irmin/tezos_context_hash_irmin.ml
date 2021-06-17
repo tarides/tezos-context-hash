@@ -10,5 +10,16 @@ module Conf = struct
   let stable_hash = 256
 end
 
-module Maker = Irmin_pack.Maker_ext (V1) (Conf) (Node) (Commit)
-module Store = Maker.Make (Metadata) (Contents) (Path) (Branch) (Hash)
+module Store =
+  Irmin_pack.Make_ext
+    (struct
+      let version = `V1
+    end)
+    (Conf)
+    (Node)
+    (Commit)
+    (Metadata)
+    (Contents)
+    (Path)
+    (Branch)
+    (Hash)
