@@ -13,5 +13,8 @@ module Store : sig
        and type hash = Hash.t
        and type Private.Remote.endpoint = unit
 
-  val reconstruct_index : ?output:string -> Irmin.config -> unit
+  val traverse_pack_file :
+    [ `Reconstruct_index of [ `In_place | `Output of string ] | `Check_index ] ->
+    Irmin.config ->
+    unit
 end
