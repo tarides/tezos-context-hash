@@ -14,7 +14,7 @@ bug-reports: "https://github.com/tarides/tezos-context-hash/issues"
 depends: [
   "dune" {>= "2.6"}
   "tezos-context-hash"
-  "irmin" {> "2.5.3"}
+  "irmin" {>= "2.7.0"}
   "cmdliner"
   "fmt"
   "yojson"
