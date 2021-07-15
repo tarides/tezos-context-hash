@@ -23,10 +23,10 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-module Hash : Irmin.Hash.S
-module Contents : Irmin.Contents.S with type t = bytes
-module Metadata : Irmin.Metadata.S with type t = unit
-module Path : Irmin.Path.S with type step = string and type t = string list
-module Branch : Irmin.Branch.S with type t = string
-module Node : Irmin.Private.Node.Maker
-module Commit : Irmin.Private.Commit.Maker
+include Irmin.Schema.S 
+  with type Contents.t = bytes
+    and type Metadata.t = unit
+    and type Path.t = string list
+    and type Path.step = string
+    and type Branch.t = string
+    and module Info = Irmin.Info.Default

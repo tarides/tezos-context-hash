@@ -27,19 +27,10 @@ module Path = Irmin.Path.String_list
 module Metadata = Irmin.Metadata.None
 module Branch = Irmin.Branch.String
 module Hash : Irmin.Hash.S = Tezos_context_hash.Hash
+module Info = Irmin.Info.Default
 
-module Node : Irmin.Private.Node.Maker =
-functor
-  (Hash : Irmin.Hash.S)
-  (Path : sig
-     type step
-
-     val step_t : step Irmin.Type.t
-   end)
-  (Metadata : Irmin.Metadata.S)
-  ->
-  struct
-    module M = Irmin.Private.Node.Make (Hash) (Path) (Metadata)
+module Node = struct
+    module M = Irmin.Node.Make (Hash) (Path) (Metadata)
 
     (* [V1] is only used to compute preimage hashes. [assert false]
        statements should be unreachable.*)
@@ -99,19 +90,15 @@ functor
     let t = Irmin.Type.(like t ~pre_hash:(stage @@ fun x -> V1.pre_hash x))
   end
 
-module Commit : Irmin.Private.Commit.Maker = struct
-  module Make (Hash : Irmin.Type.S) = struct
-    module M = Irmin.Private.Commit.Make (Hash)
-    module V1 = Irmin.Private.Commit.V1.Make (M)
+module Commit  = struct
+    module M = Irmin.Commit.Make (Hash)
+    module V1 = Irmin.Commit.V1.Make (M)
     include M
 
     let pre_hash_v1_t = Irmin.Type.(unstage (pre_hash V1.t))
     let pre_hash_v1 t = pre_hash_v1_t (V1.import t)
     let t = Irmin.Type.(like t ~pre_hash:(stage @@ fun x -> pre_hash_v1 x))
   end
-
-  module Info = Irmin.Info.Default
-end
 
 module Contents = struct
   type t = bytes
