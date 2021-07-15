@@ -12,7 +12,7 @@ license: "MIT"
 homepage: "https://github.com/tarides/tezos-context-hash"
 bug-reports: "https://github.com/tarides/tezos-context-hash/issues"
 depends: [
-  "dune" {>= "2.6"}
+  "dune" {>= "2.7"}
   "tezos-context-hash"
   "irmin" {>= "2.7.0"}
   "cmdliner"
@@ -20,9 +20,10 @@ depends: [
   "yojson"
   "irmin-pack"
   "ppx_irmin"
+  "odoc" {with-doc}
 ]
 build: [
-  ["dune" "subst"] {pinned}
+  ["dune" "subst"] {dev}
   [
     "dune"
     "build"
