@@ -21,7 +21,7 @@ complies with the specification.
  (depends
   (alcotest :with-test)
   (digestif (>= 0.9.0))
-  fmt
+  (fmt (>= 0.8.7))
   repr
   zarith))
 
