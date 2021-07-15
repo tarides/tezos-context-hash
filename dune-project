@@ -21,7 +21,7 @@ complies with the specification.
  (depends
   (digestif (>= 0.9.0))
   (fmt (>= 0.8.7))
-  repr
+  (repr (>= "0.2.0"))
   zarith))
 
 (package
