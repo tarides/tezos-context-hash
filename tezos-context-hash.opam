@@ -38,5 +38,3 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/tarides/tezos-context-hash.git"
-available: arch != "arm32" & arch != "x86_32"
-
