@@ -31,7 +31,7 @@ complies with the specification.
  (description "Irmin implementation of the Tezos context hash specification")
  (depends
   tezos-context-hash
-  (irmin (> 2.5.3))
+  (irmin (>= 2.7.0))
   cmdliner
   fmt
   yojson

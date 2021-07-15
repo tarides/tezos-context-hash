@@ -11,15 +11,6 @@ module Conf = struct
 end
 
 module Store =
-  Irmin_pack.Make_ext
-    (struct
-      let version = `V1
-    end)
-    (Conf)
-    (Node)
-    (Commit)
-    (Metadata)
-    (Contents)
-    (Path)
+  Irmin_pack.Make_ext (V1) (Conf) (Node) (Commit) (Metadata) (Contents) (Path)
     (Branch)
     (Hash)

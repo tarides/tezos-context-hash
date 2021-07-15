@@ -38,13 +38,3 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/tarides/tezos-context-hash.git"
-pin-depends: [
-  [ "irmin.dev" "git+https://github.com/mirage/irmin#90cf4569a631b89cd8b765d5d60a57705f27bc8b" ]
-  [ "irmin-layers.dev" "git+https://github.com/mirage/irmin#90cf4569a631b89cd8b765d5d60a57705f27bc8b" ]
-  [ "irmin-pack.dev" "git+https://github.com/mirage/irmin#90cf4569a631b89cd8b765d5d60a57705f27bc8b" ]
-  [ "ppx_irmin.dev" "git+https://github.com/mirage/irmin#90cf4569a631b89cd8b765d5d60a57705f27bc8b" ]
-  [ "index.dev" "git+https://github.com/mirage/index#97a090c45fe8cf6b8cebda7085de376c551ad3fa" ]
-]
-
-available: arch != "arm32" & arch != "x86_32"
-
