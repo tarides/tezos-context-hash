@@ -13,6 +13,7 @@ homepage: "https://github.com/tarides/tezos-context-hash"
 bug-reports: "https://github.com/tarides/tezos-context-hash/issues"
 depends: [
   "dune" {>= "2.7"}
+  "alcotest" {with-test}
   "tezos-context-hash"
   "irmin" {>= "2.7.0"}
   "cmdliner"
