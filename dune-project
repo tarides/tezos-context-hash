@@ -1,4 +1,4 @@
-(lang dune 2.6)
+(lang dune 2.7)
 (generate_opam_files true)
 
 (name tezos-context-hash)
@@ -19,10 +19,9 @@ as well as generators of datasets useful to verify that an implementation
 complies with the specification.
 ")
  (depends
-  (alcotest :with-test)
   (digestif (>= 0.9.0))
-  fmt
-  repr
+  (fmt (>= 0.8.7))
+  (repr (>= "0.2.0"))
   zarith))
 
 (package
@@ -30,6 +29,7 @@ complies with the specification.
  (synopsis "Irmin implementation of the Tezos context hash specification")
  (description "Irmin implementation of the Tezos context hash specification")
  (depends
+  (alcotest :with-test)
   tezos-context-hash
   (irmin (>= 2.7.0))
   cmdliner

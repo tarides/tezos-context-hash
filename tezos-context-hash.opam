@@ -16,15 +16,15 @@ license: "MIT"
 homepage: "https://github.com/tarides/tezos-context-hash"
 bug-reports: "https://github.com/tarides/tezos-context-hash/issues"
 depends: [
-  "dune" {>= "2.6"}
-  "alcotest" {with-test}
+  "dune" {>= "2.7"}
   "digestif" {>= "0.9.0"}
-  "fmt"
-  "repr"
+  "fmt" {>= "0.8.7"}
+  "repr" {>= "0.2.0"}
   "zarith"
+  "odoc" {with-doc}
 ]
 build: [
-  ["dune" "subst"] {pinned}
+  ["dune" "subst"] {dev}
   [
     "dune"
     "build"
