@@ -20,7 +20,7 @@ depends: [
   "irmin-pack"
   "ppx_irmin"
   "cmdliner"
-  "irmin"
+  "irmin" {= "2.2.0"}
   "yojson"
   "zarith"
 ]
@@ -31,7 +31,3 @@ build: [
 ]
 available:[arch = "x86_64"]
 dev-repo: "git+https://github.com/tarides/tezos-context-hash.git"
-pin-depends: [
-  "irmin-pack.2.5.1"
-  "git+https://github.com/mirage/irmin.git#06f1240d549a6e971b2445c56704ceb048f491b0"
-]
