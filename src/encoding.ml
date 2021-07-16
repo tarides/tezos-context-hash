@@ -47,9 +47,7 @@ module Hash : Irmin.Hash.S = struct
         Error (`Msg (Format.asprintf "Failed to read b58check_encoding data"))
 
   let short_hash_string = Irmin.Type.(short_hash string)
-
-  let short_hash_staged ?seed t =
-    short_hash_string ?seed (H.to_raw_string t)
+  let short_hash_staged ?seed t = short_hash_string ?seed (H.to_raw_string t)
 
   let t : t Irmin.Type.t =
     Irmin.Type.map ~cli:(pp, of_string)
