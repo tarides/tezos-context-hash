@@ -32,12 +32,5 @@ module Conf = struct
 end
 
 module Store =
-  Irmin_pack.Make_ext
-    (Conf)
-    (Metadata)
-    (Contents)
-    (Path)
-    (Branch)
-    (Hash)
-    (Node)
+  Irmin_pack.Make_ext (Conf) (Metadata) (Contents) (Path) (Branch) (Hash) (Node)
     (Commit)
