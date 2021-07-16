@@ -1,4 +1,3 @@
-open Encoding
 module Encoding = Encoding
 
 module V1 = struct

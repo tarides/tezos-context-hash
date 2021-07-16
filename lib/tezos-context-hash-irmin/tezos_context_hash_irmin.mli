@@ -1,5 +1,4 @@
 module Encoding = Encoding
-open Encoding
 module Conf : Irmin_pack.Conf.S
 
 module Store : sig
