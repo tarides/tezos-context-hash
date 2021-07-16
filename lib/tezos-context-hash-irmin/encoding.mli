@@ -23,10 +23,11 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-include Irmin.Schema.S 
-  with type Contents.t = bytes
-    and type Metadata.t = unit
-    and type Path.t = string list
-    and type Path.step = string
-    and type Branch.t = string
-    and module Info = Irmin.Info.Default
+include
+  Irmin.Schema.S
+    with type Contents.t = bytes
+     and type Metadata.t = unit
+     and type Path.t = string list
+     and type Path.step = string
+     and type Branch.t = string
+     and module Info = Irmin.Info.Default
