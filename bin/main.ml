@@ -1,6 +1,5 @@
 open Tezos_context_hash_irmin
 open Encoding
-module Node = Node (Hash) (Path) (Metadata)
 module Inter = Irmin_pack.Inode.Make_internal (Conf) (Hash) (Node)
 
 module Spec = struct

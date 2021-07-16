@@ -1,10 +1,9 @@
 pin-depends: [
-  [ "irmin.dev" "git+https://github.com/mirage/irmin#90cf4569a631b89cd8b765d5d60a57705f27bc8b" ]
-  [ "irmin-layers.dev" "git+https://github.com/mirage/irmin#90cf4569a631b89cd8b765d5d60a57705f27bc8b" ]
-  [ "irmin-pack.dev" "git+https://github.com/mirage/irmin#90cf4569a631b89cd8b765d5d60a57705f27bc8b" ]
-  [ "ppx_irmin.dev" "git+https://github.com/mirage/irmin#90cf4569a631b89cd8b765d5d60a57705f27bc8b" ]
-  [ "index.dev" "git+https://github.com/mirage/index#97a090c45fe8cf6b8cebda7085de376c551ad3fa" ]
+  [ "repr.dev" "git+https://github.com/mirage/repr#6845bd77f82739333d893c07ca7e973908facb05" ]
+  [ "ppx_repr.dev" "git+https://github.com/mirage/repr#6845bd77f82739333d893c07ca7e973908facb05" ]
+  [ "irmin.dev" "git+https://github.com/mirage/irmin#e4ec02eafd394f96a36c390f7d61af9ce223404a" ]
+  [ "irmin-layers.dev" "git+https://github.com/mirage/irmin#e4ec02eafd394f96a36c390f7d61af9ce223404a" ]
+  [ "irmin-pack.dev" "git+https://github.com/mirage/irmin#e4ec02eafd394f96a36c390f7d61af9ce223404a" ]
+  [ "ppx_irmin.dev" "git+https://github.com/mirage/irmin#e4ec02eafd394f96a36c390f7d61af9ce223404a" ]
+  [ "index.dev" "git+https://github.com/mirage/index#1132a0b7550c1c75b7ac680202c8e01e398a5e85" ]
 ]
-
-available: arch != "arm32" & arch != "x86_32"
-
