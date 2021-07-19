@@ -8,7 +8,9 @@ module Store : sig
        and type Private.Remote.endpoint = unit
 
   val traverse_pack_file :
-    [ `Reconstruct_index of [ `In_place | `Output of string ] | `Check_index ] ->
+    [ `Reconstruct_index of [ `In_place | `Output of string ]
+    | `Check_index
+    | `Check_and_fix_index ] ->
     Irmin.config ->
     unit
 end
