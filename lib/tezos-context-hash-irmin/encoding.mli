@@ -24,7 +24,7 @@
 (*****************************************************************************)
 
 include
-  Irmin.Schema.S
+  Irmin.Schema.Extended
     with type Contents.t = bytes
      and type Metadata.t = unit
      and type Path.t = string list
