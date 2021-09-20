@@ -10,7 +10,7 @@ module Store : sig
        and type Schema.Path.t = Encoding.Path.t
        and type Schema.Path.step = Encoding.Path.step
        and type Schema.Contents.t = Encoding.Contents.t
-       and type Private.Remote.endpoint = unit
+       and type Backend.Remote.endpoint = unit
 
   val traverse_pack_file :
     [ `Reconstruct_index of [ `In_place | `Output of string ]
