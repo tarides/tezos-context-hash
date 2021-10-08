@@ -94,7 +94,7 @@ struct
 
   include M
 
-  let t = Irmin.Type.(like t ~pre_hash:(stage @@ fun x -> V1.pre_hash x))
+  let t = Irmin.Type.(like t ~pre_hash:V1.pre_hash)
 end
 
 module Commit
@@ -107,7 +107,7 @@ struct
 
   let pre_hash_v1_t = Irmin.Type.(unstage (pre_hash V1.t))
   let pre_hash_v1 t = pre_hash_v1_t (V1.import t)
-  let t = Irmin.Type.(like t ~pre_hash:(stage @@ fun x -> pre_hash_v1 x))
+  let t = Irmin.Type.(like t ~pre_hash:pre_hash_v1)
 end
 
 module Contents = struct
@@ -116,6 +116,6 @@ module Contents = struct
   let ty = Irmin.Type.(pair (bytes_of `Int64) unit)
   let pre_hash_ty = Irmin.Type.(unstage (pre_hash ty))
   let pre_hash_v1 x = pre_hash_ty (x, ())
-  let t = Irmin.Type.(like bytes ~pre_hash:(stage @@ fun x -> pre_hash_v1 x))
+  let t = Irmin.Type.(like bytes ~pre_hash:pre_hash_v1)
   let merge = Irmin.Merge.(idempotent (Irmin.Type.option t))
 end
