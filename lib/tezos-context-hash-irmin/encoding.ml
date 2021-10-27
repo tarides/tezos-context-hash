@@ -29,8 +29,13 @@ module Branch = Irmin.Branch.String
 module Hash : Irmin.Hash.S = Tezos_context_hash.Hash
 module Info = Irmin.Info.Default
 
-module Node = struct
-  module M = Irmin.Node.Make (Hash) (Path) (Metadata)
+module Node
+    (Contents_key : Irmin.Key.S with type hash = Hash.t)
+    (Node_key : Irmin.Key.S with type hash = Hash.t) =
+struct
+  module M =
+    Irmin.Node.Generic_key.Make (Hash) (Path) (Metadata) (Contents_key)
+      (Node_key)
 
   (* [V1] is only used to compute preimage hashes. [assert false]
      statements should be unreachable.*)
@@ -59,7 +64,9 @@ module Node = struct
       match t with `Node _ -> None | `Contents (_, m) -> Some m
 
     let hash_of_entry (_, t) =
-      match t with `Node h -> h | `Contents (h, _) -> h
+      match t with
+      | `Node h -> Node_key.to_hash h
+      | `Contents (h, _) -> Contents_key.to_hash h
 
     (* Irmin 1.4 uses int64 to store list lengths *)
     let entry_t : entry Irmin.Type.t =
@@ -87,17 +94,20 @@ module Node = struct
 
   include M
 
-  let t = Irmin.Type.(like t ~pre_hash:(stage @@ fun x -> V1.pre_hash x))
+  let t = Irmin.Type.(like t ~pre_hash:V1.pre_hash)
 end
 
-module Commit = struct
-  module M = Irmin.Commit.Make (Hash)
+module Commit
+    (Node_key : Irmin.Key.S with type hash = Hash.t)
+    (Commit_key : Irmin.Key.S with type hash = Hash.t) =
+struct
+  module M = Irmin.Commit.Generic_key.Make (Hash) (Node_key) (Commit_key)
   module V1 = Irmin.Commit.V1.Make (M)
   include M
 
   let pre_hash_v1_t = Irmin.Type.(unstage (pre_hash V1.t))
   let pre_hash_v1 t = pre_hash_v1_t (V1.import t)
-  let t = Irmin.Type.(like t ~pre_hash:(stage @@ fun x -> pre_hash_v1 x))
+  let t = Irmin.Type.(like t ~pre_hash:pre_hash_v1)
 end
 
 module Contents = struct
@@ -106,6 +116,6 @@ module Contents = struct
   let ty = Irmin.Type.(pair (bytes_of `Int64) unit)
   let pre_hash_ty = Irmin.Type.(unstage (pre_hash ty))
   let pre_hash_v1 x = pre_hash_ty (x, ())
-  let t = Irmin.Type.(like bytes ~pre_hash:(stage @@ fun x -> pre_hash_v1 x))
+  let t = Irmin.Type.(like bytes ~pre_hash:pre_hash_v1)
   let merge = Irmin.Merge.(idempotent (Irmin.Type.option t))
 end
