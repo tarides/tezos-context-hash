@@ -1,5 +1,6 @@
-open Tezos_context_hash_irmin
-open Encoding
+open Irmin_tezos
+open Schema
+module Node = Store.Backend.Node.Val
 module Inter = Irmin_pack.Inode.Make_internal (Conf) (Hash) (Node)
 
 module Spec = struct
@@ -34,7 +35,7 @@ module Spec = struct
   let pp_entry = Irmin.Type.pp_json entry_t
   let pps = Irmin.Type.pp_json ~minify:false (Irmin.Type.list node_t)
 
-  module N = Irmin.Hash.Typed (Store.Hash) (Store.Private.Node.Val)
+  module N = Irmin.Hash.Typed (Store.Hash) (Node)
 
   let hash_node = N.hash
   let pp_hash = Irmin.Type.pp Store.Hash.t
@@ -70,7 +71,7 @@ module Gen = struct
     let b = Random.bool () in
     hash () |> if b then contents else node
 
-  let fixed_inode n () = fixed_list n (pair string atom) () |> Inter.Val.v
+  let fixed_inode n () = fixed_list n (pair string atom) () |> Inter.Val.of_list
 
   let long_inode () =
     let len = Conf.stable_hash + Random.int (1 lsl 10) in
@@ -100,7 +101,7 @@ let file dir prefix file =
     | Nodes -> "nodes"
   in
   let prefix = match prefix with None -> "" | Some p -> p ^ "." in
-  dir / Fmt.strf "%s%s.json" prefix file
+  dir / Fmt.str "%s%s.json" prefix file
 
 let check_int msg expected got =
   if expected <> got then (
@@ -143,7 +144,7 @@ module OCaml_hashes = struct
         let seed = json |> member "seed" |> to_int in
         let ocaml_hash = json |> member "ocaml_hash" |> to_int in
         let result = Hashtbl.seeded_hash seed s in
-        let msg = Fmt.strf "hash(seed=%d, s=%S)" seed s in
+        let msg = Fmt.str "hash(seed=%d, s=%S)" seed s in
         check_int msg ocaml_hash result)
       (to_list v);
     close_in ic
@@ -197,9 +198,9 @@ module Nodes = struct
                  { Spec.name; kind; hash })
         in
         let vs = List.map Spec.value bindings in
-        let n = Store.Private.Node.Val.v vs in
+        let n = Node.of_list vs in
         let h = Spec.hash_node n in
-        let msg = Fmt.strf "%a\n" Fmt.Dump.(list Spec.pp_entry) bindings in
+        let msg = Fmt.str "%a\n" Fmt.Dump.(list Spec.pp_entry) bindings in
         check_hash msg hash h)
       (to_list v);
     close_in ic
