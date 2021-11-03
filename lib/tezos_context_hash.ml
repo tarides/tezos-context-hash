@@ -189,7 +189,7 @@ let index d n = ocaml_hash d n mod 32
 
 type inode = Empty | Value of inode_value | Tree of inode_tree
 
-(** This implements the computation of $X_{d,j}$. *)
+(** This implements the computation of $X_\{d,j\}$. *)
 let filter x d j = List.filter (fun { name; _ } -> index d name = j) x
 
 let rec partition d x =

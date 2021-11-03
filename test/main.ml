@@ -1,23 +1,21 @@
-open Monolith
-
 module Types = struct
   type hash = string
 
-  type commit_metadata = Spec.commit_metadata = {
+  type commit_metadata = Tezos_context_hash.commit_metadata = {
     date : int64;
     author : string;
     message : string;
   }
 
-  type commit = Spec.commit = {
+  type commit = Tezos_context_hash.commit = {
     tree : hash;
     parents : hash list;
     metadata : commit_metadata;
   }
 
-  type entry_kind = Spec.entry_kind = Content | Node
+  type entry_kind = Tezos_context_hash.entry_kind = Content | Node
 
-  type tree_entry = Spec.tree_entry = {
+  type tree_entry = Tezos_context_hash.tree_entry = {
     name : string;
     kind : entry_kind;
     hash : hash;
@@ -35,9 +33,10 @@ module type Testable = sig
   val tree : tree_entry list -> string
 end
 
-module C : Testable = Spec
+module C : Testable = Tezos_context_hash
 
 module R : Testable = struct
+  open Irmin_tezos
   include Types
 
   let with_encoder encoder x =
@@ -46,9 +45,7 @@ module R : Testable = struct
     Buffer.contents buf
 
   let to_irmin_hash =
-    let encode =
-      Irmin.Type.(unstage (of_bin_string Irmin_tezos.Encoding.Hash.t))
-    in
+    let encode = Irmin.Type.(unstage (of_bin_string Schema.Hash.t)) in
     fun x -> encode x |> Result.get_ok
 
   let fixed_int =
@@ -60,32 +57,28 @@ module R : Testable = struct
     with_encoder encode
 
   let content =
-    let encode =
-      Irmin.Type.(unstage (pre_hash Irmin_tezos.Encoding.Contents.t))
-    in
+    let encode = Irmin.Type.(unstage (pre_hash Schema.Contents.t)) in
     with_encoder encode
 
+  module Key = Irmin.Key.Of_hash (Schema.Hash)
+  module Commit = Schema.Commit (Key) (Key)
+  module Node = Schema.Node (Key) (Key)
+
   let commit =
-    let encode =
-      Irmin.Type.(unstage (pre_hash Irmin_tezos.Encoding.Commit.t))
-    in
+    let encode = Irmin.Type.(unstage (pre_hash Commit.t)) in
     let to_irmin_metadata { date; author; message } =
-      Irmin.Info.v ~date ~author message
+      Irmin_tezos.Schema.Info.v ~message ~author date
     in
     let to_irmin_commit { tree; parents; metadata } =
       let info = to_irmin_metadata metadata in
-      Irmin_tezos.Encoding.Commit.v ~info ~node:(to_irmin_hash tree)
+      Commit.v ~info ~node:(to_irmin_hash tree)
         ~parents:(List.map to_irmin_hash parents)
     in
     fun c -> with_encoder encode (to_irmin_commit c)
 
   let ocaml_hash = Hashtbl.seeded_hash
 
-  module Inter =
-    Irmin_pack.Private.Inode.Make_intermediate
-      (Irmin_tezos.Conf)
-      (Irmin_tezos.Encoding.Hash)
-      (Irmin_tezos.Encoding.Node)
+  module Inter = Irmin_pack.Inode.Make_internal (Conf) (Schema.Hash) (Node)
 
   let tree =
     let encode = Irmin.Type.(unstage (pre_hash Inter.Val.t)) in
@@ -93,12 +86,14 @@ module R : Testable = struct
       let hash = to_irmin_hash hash in
       ( name,
         match kind with
-        | Content -> `Contents (hash, Irmin_tezos.Encoding.Metadata.default)
+        | Content -> `Contents (hash, Store.Metadata.default)
         | Node -> `Node hash )
     in
-    let to_irmin_tree l = List.map to_irmin_entry l |> Inter.Val.v in
+    let to_irmin_tree l = List.map to_irmin_entry l |> Inter.Val.of_list in
     fun t -> with_encoder encode (to_irmin_tree t)
 end
+
+open Monolith
 
 (** Custom generators absent from Monolith *)
 module G = struct
@@ -108,7 +103,7 @@ module G = struct
   let int64 () = Int64.of_int (Gen.int Int.max_int ())
 
   let commit_metadata () =
-    C.{ date = int64 (); author = string (); message = string () }
+    { C.date = int64 (); C.author = string (); C.message = string () }
 
   let commit () =
     {

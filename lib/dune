@@ -1,0 +1,4 @@
+(library
+ (public_name tezos-context-hash)
+ (name tezos_context_hash)
+ (libraries digestif))
