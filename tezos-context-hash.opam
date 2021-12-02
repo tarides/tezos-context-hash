@@ -13,7 +13,7 @@ homepage: "https://github.com/tarides/tezos-context-hash"
 bug-reports: "https://github.com/tarides/tezos-context-hash/issues"
 depends: [
   "dune" {>= "2.7"}
-  "irmin" {>= "2.7.0"}
+  "irmin" {>= "2.9.0"}
   "irmin-tezos"
   "irmin-pack"
   "ppx_irmin"
@@ -29,11 +29,3 @@ build: [
   ["dune" "build" "-p" name "-j" jobs "runtest" {with-test}]
 ]
 dev-repo: "git+https://github.com/tarides/tezos-context-hash.git"
-pin-depends: [
-  ["irmin.dev" "git+https://github.com/mirage/irmin.git#041f63e8bbbe78f323e75a5d6bf08201fd7906ea"]
-  ["ppx_irmin.dev" "git+https://github.com/mirage/irmin.git#041f63e8bbbe78f323e75a5d6bf08201fd7906ea"]
-  ["irmin-pack.dev" "git+https://github.com/mirage/irmin.git#041f63e8bbbe78f323e75a5d6bf08201fd7906ea"]
-  ["irmin-layers.dev" "git+https://github.com/mirage/irmin.git#041f63e8bbbe78f323e75a5d6bf08201fd7906ea"]
-  ["irmin-test.dev" "git+https://github.com/mirage/irmin.git#041f63e8bbbe78f323e75a5d6bf08201fd7906ea"]
-  ["irmin-tezos.dev" "git+https://github.com/mirage/irmin.git#041f63e8bbbe78f323e75a5d6bf08201fd7906ea"]
-]

@@ -60,14 +60,13 @@ module R : Testable = struct
     let encode = Irmin.Type.(unstage (pre_hash Schema.Contents.t)) in
     with_encoder encode
 
-  module Key = Irmin.Key.Of_hash (Schema.Hash)
-  module Commit = Schema.Commit (Key) (Key)
-  module Node = Schema.Node (Key) (Key)
+  module Commit = Schema.Commit (Schema.Hash)
+  module Node = Schema.Node (Schema.Hash) (Schema.Path) (Schema.Metadata)
 
   let commit =
     let encode = Irmin.Type.(unstage (pre_hash Commit.t)) in
     let to_irmin_metadata { date; author; message } =
-      Irmin_tezos.Schema.Info.v ~message ~author date
+      Irmin.Info.v ~author ~date message
     in
     let to_irmin_commit { tree; parents; metadata } =
       let info = to_irmin_metadata metadata in
