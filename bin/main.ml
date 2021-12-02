@@ -101,7 +101,7 @@ let file dir prefix file =
     | Nodes -> "nodes"
   in
   let prefix = match prefix with None -> "" | Some p -> p ^ "." in
-  dir / Fmt.strf "%s%s.json" prefix file
+  dir / Fmt.str "%s%s.json" prefix file
 
 let check_int msg expected got =
   if expected <> got then (
@@ -144,7 +144,7 @@ module OCaml_hashes = struct
         let seed = json |> member "seed" |> to_int in
         let ocaml_hash = json |> member "ocaml_hash" |> to_int in
         let result = Hashtbl.seeded_hash seed s in
-        let msg = Fmt.strf "hash(seed=%d, s=%S)" seed s in
+        let msg = Fmt.str "hash(seed=%d, s=%S)" seed s in
         check_int msg ocaml_hash result)
       (to_list v);
     close_in ic
@@ -200,7 +200,7 @@ module Nodes = struct
         let vs = List.map Spec.value bindings in
         let n = Store.Private.Node.Val.v vs in
         let h = Spec.hash_node n in
-        let msg = Fmt.strf "%a\n" Fmt.Dump.(list Spec.pp_entry) bindings in
+        let msg = Fmt.str "%a\n" Fmt.Dump.(list Spec.pp_entry) bindings in
         check_hash msg hash h)
       (to_list v);
     close_in ic
