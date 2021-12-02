@@ -1,0 +1,7 @@
+(executable
+ (name main)
+ (libraries tezos-context-hash irmin irmin-tezos irmin-pack pprint monolith))
+
+(alias
+ (name runtest)
+ (deps main.exe))

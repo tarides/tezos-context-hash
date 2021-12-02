@@ -1,6 +1,6 @@
 open Irmin_tezos
 open Schema
-module Node = Store.Backend.Node.Val
+module Node = Store.Private.Node.Val
 module Inter = Irmin_pack.Inode.Make_internal (Conf) (Hash) (Node)
 
 module Spec = struct
