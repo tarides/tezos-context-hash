@@ -43,9 +43,7 @@ let of_string : string -> (t, [ `Msg of string ]) result =
       Error (`Msg (Format.asprintf "Failed to read b58check_encoding data"))
 
 let short_hash_string = Repr.(unstage (short_hash string))
-
-let short_hash_staged =
-  Repr.stage @@ fun ?seed t -> short_hash_string ?seed (H.to_raw_string t)
+let short_hash_staged ?seed t = short_hash_string ?seed (H.to_raw_string t)
 
 let t : t Repr.t =
   Repr.map ~pp ~of_string

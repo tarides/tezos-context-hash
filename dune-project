@@ -31,7 +31,7 @@ complies with the specification.
  (depends
   (alcotest :with-test)
   tezos-context-hash
-  (irmin (>= 2.7.0))
+  (irmin (and (>= 2.8.0) (< 2.9.0)))
   cmdliner
   fmt
   yojson

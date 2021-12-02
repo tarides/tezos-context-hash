@@ -71,7 +71,7 @@ module Gen = struct
     let b = Random.bool () in
     hash () |> if b then contents else node
 
-  let fixed_inode n () = fixed_list n (pair string atom) () |> Inter.Val.v
+  let fixed_inode n () = fixed_list n (pair string atom) () |> Inter.Val.of_list
 
   let long_inode () =
     let len = Conf.stable_hash + Random.int (1 lsl 10) in
@@ -198,7 +198,7 @@ module Nodes = struct
                  { Spec.name; kind; hash })
         in
         let vs = List.map Spec.value bindings in
-        let n = Store.Private.Node.Val.v vs in
+        let n = Store.Private.Node.Val.of_list vs in
         let h = Spec.hash_node n in
         let msg = Fmt.str "%a\n" Fmt.Dump.(list Spec.pp_entry) bindings in
         check_hash msg hash h)
